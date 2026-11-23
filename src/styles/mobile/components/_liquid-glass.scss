@@ -12,9 +12,8 @@
     border: var(--ebk-glass-border);
     border-radius: 9999px;
     overflow: hidden;
-    transition: transform 220ms cubic-bezier(0.22, 1, 0.36, 1),
-                box-shadow 220ms ease,
-                background-color 220ms ease;
+    transition: box-shadow 180ms ease,
+                background-color 180ms ease;
 
     /* Specular top-edge optical sheen */
     &::before {
@@ -35,12 +34,11 @@
     height: calc(var(--f7-toolbar-height) + var(--ebk-glass-toolbar-bottom-gap) + var(--f7-safe-area-bottom));
     pointer-events: none;
 
+    /* Avoid stacking a second full-width masked backdrop-filter behind the glass pill */
     &::before {
-        top: -20px;
-        backdrop-filter: blur(4px);
-        -webkit-backdrop-filter: blur(4px);
-        mask-image: linear-gradient(to top, black calc(45% + var(--f7-safe-area-bottom, 0px)), transparent 100%);
-        -webkit-mask-image: linear-gradient(to top, black calc(45% + var(--f7-safe-area-bottom, 0px)), transparent 100%);
+        display: none;
+        backdrop-filter: none;
+        -webkit-backdrop-filter: none;
     }
 
     &::after {
@@ -123,10 +121,8 @@
             align-items: center;
             justify-content: center;
             color: var(--ebk-glass-tab-color);
-            transition: transform 180ms cubic-bezier(0.22, 1, 0.36, 1),
-                        background-color 180ms ease,
-                        box-shadow 180ms ease,
-                        color 180ms ease;
+            transition: background-color 160ms ease,
+                        color 160ms ease;
 
             &::before {
                 display: none;
@@ -136,7 +132,6 @@
                 font-size: 22px;
                 height: 22px;
                 line-height: 22px;
-                transition: transform 180ms cubic-bezier(0.22, 1, 0.36, 1);
             }
 
             i + span.tabbar-label {
@@ -150,9 +145,11 @@
                 text-overflow: ellipsis;
             }
 
-            &:hover {
-                background: var(--ebk-glass-item-hover-bg);
-                color: var(--ebk-glass-tab-hover-color);
+            @media (hover: hover) and (pointer: fine) {
+                &:hover {
+                    background: var(--ebk-glass-item-hover-bg);
+                    color: var(--ebk-glass-tab-hover-color);
+                }
             }
 
             &:active,
@@ -161,7 +158,6 @@
                 background: var(--ebk-glass-item-active-bg);
                 box-shadow: var(--ebk-glass-item-active-shadow);
                 color: var(--ebk-glass-tab-active-color);
-                transform: scale(0.95);
             }
         }
     }
@@ -176,6 +172,8 @@
         padding: 0;
         z-index: 5;
         background: var(--ebk-glass-orb-bg);
+        backdrop-filter: none;
+        -webkit-backdrop-filter: none;
         border: var(--ebk-glass-orb-border);
         box-shadow: var(--ebk-glass-orb-shadow);
 
@@ -183,14 +181,10 @@
             background: var(--ebk-glass-orb-specular-gradient);
         }
 
-        &:hover {
-            transform: translateX(-50%) scale(1.05);
-            box-shadow: var(--ebk-glass-orb-hover-shadow);
-        }
-
-        &:active,
-        &:has(.active-state) {
-            transform: translateX(-50%) scale(0.94);
+        @media (hover: hover) and (pointer: fine) {
+            &:hover {
+                box-shadow: var(--ebk-glass-orb-hover-shadow);
+            }
         }
 
         > .link {
@@ -206,10 +200,12 @@
             align-items: center;
             justify-content: center;
             color: var(--ebk-glass-orb-icon-color);
-            transition: background-color 180ms ease;
+            transition: background-color 160ms ease;
 
-            &:hover {
-                background: var(--ebk-glass-orb-tint-hover);
+            @media (hover: hover) and (pointer: fine) {
+                &:hover {
+                    background: var(--ebk-glass-orb-tint-hover);
+                }
             }
 
             &:active,
@@ -256,9 +252,8 @@
             font-size: 14px;
             font-weight: 500;
             color: var(--ebk-glass-tab-color);
-            transition: transform 180ms cubic-bezier(0.22, 1, 0.36, 1),
-                        background-color 180ms ease,
-                        color 180ms ease;
+            transition: background-color 160ms ease,
+                        color 160ms ease;
 
             i.icon {
                 font-size: 20px;
@@ -266,15 +261,16 @@
                 line-height: 20px;
             }
 
-            &:hover:not(.disabled) {
-                background: var(--ebk-glass-item-hover-bg);
-                color: var(--ebk-glass-tab-hover-color);
+            @media (hover: hover) and (pointer: fine) {
+                &:hover:not(.disabled) {
+                    background: var(--ebk-glass-item-hover-bg);
+                    color: var(--ebk-glass-tab-hover-color);
+                }
             }
 
             &:active:not(.disabled),
             &.active-state:not(.disabled) {
                 background: var(--ebk-glass-item-active-bg);
-                transform: scale(0.95);
             }
 
             &.tabbar-text-with-ellipsis {
@@ -290,15 +286,6 @@
         height: var(--f7-toolbar-height);
         padding: 0;
 
-        &:hover {
-            transform: scale(1.035);
-        }
-
-        &:active,
-        &:has(.active-state) {
-            transform: scale(0.93);
-        }
-
         > .link {
             position: relative;
             z-index: 1;
@@ -309,6 +296,20 @@
             padding: 0 !important;
             border-radius: 9999px;
             color: var(--ebk-glass-tab-color);
+            transition: background-color 160ms ease,
+                        color 160ms ease;
+
+            @media (hover: hover) and (pointer: fine) {
+                &:hover:not(.disabled) {
+                    background: var(--ebk-glass-item-hover-bg);
+                    color: var(--ebk-glass-tab-hover-color);
+                }
+            }
+
+            &:active:not(.disabled),
+            &.active-state:not(.disabled) {
+                background: var(--ebk-glass-item-active-bg);
+            }
 
             i.icon {
                 font-size: 20px;
@@ -339,6 +340,13 @@
         letter-spacing: -0.02em;
     }
 
+    /* Avoid stacking a full-width masked blur behind the glass navbar pills */
+    .navbar-bg::before {
+        display: none;
+        backdrop-filter: none;
+        -webkit-backdrop-filter: none;
+    }
+
     .left,
     .right,
     .navbar-pane {
@@ -347,12 +355,7 @@
         background: var(--ebk-glass-bg);
         box-shadow: var(--ebk-glass-shadow);
         border: var(--ebk-glass-border);
-        transition: transform 180ms cubic-bezier(0.22, 1, 0.36, 1),
-                    background-color 180ms ease;
-
-        &:active {
-            transform: scale(0.96);
-        }
+        transition: background-color 160ms ease;
     }
 }
 
@@ -415,10 +418,24 @@
 
 .ios .fab > a {
     border: var(--ebk-glass-border);
-    transition: transform 200ms cubic-bezier(0.22, 1, 0.36, 1);
+    transition: background-color 160ms ease;
+}
 
-    &:active {
-        transform: scale(0.94);
+/* Pause expensive backdrop-filter blur during page slide transitions for 60fps on mid-range mobile GPUs */
+.ios .router-transition,
+.ios .router-transition-forward,
+.ios .router-transition-backward,
+.ios .page-previous,
+.ios .page-next {
+    .liquid-glass-surface,
+    .liquid-glass-toolbar .toolbar-pane:not(.liquid-glass-center-orb),
+    .navbar .left,
+    .navbar .right,
+    .navbar .navbar-pane,
+    .fab > a {
+        backdrop-filter: none !important;
+        -webkit-backdrop-filter: none !important;
+        background: var(--ebk-glass-transition-bg);
     }
 }
 
