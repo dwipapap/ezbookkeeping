@@ -65,8 +65,11 @@ jobs:
           cache-to: type=gha,mode=max
 
       - name: Trigger Dokploy auto-deploy webhook
-        if: ${{ secrets.DOKPLOY_WEBHOOK_URL != '' }}
         env:
           DOKPLOY_WEBHOOK_URL: ${{ secrets.DOKPLOY_WEBHOOK_URL }}
         run: |
-          curl -fsS -X POST "$DOKPLOY_WEBHOOK_URL"
+          if [ -n "$DOKPLOY_WEBHOOK_URL" ]; then
+            curl -fsS -X POST "$DOKPLOY_WEBHOOK_URL"
+          else
+            echo "DOKPLOY_WEBHOOK_URL secret not configured; skipping webhook trigger."
+          fi
