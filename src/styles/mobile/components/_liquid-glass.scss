@@ -1,19 +1,47 @@
-/** iOS 26 Liquid Glass design system for mobile **/
+/** iOS 26 Liquid Glass design system for mobile (GPU-optimized frosted glass without backdrop-filter blur) **/
 
-/* Shared Liquid Glass surface helper via CSS custom properties */
+/* Disable all heavy Framework7 & custom backdrop-filter blur layers on mobile for smooth 60fps transitions */
+.ios .liquid-glass-surface,
+.ios .toolbar::before,
+.ios .toolbar-pane,
+.ios .toolbar .left,
+.ios .toolbar .right,
+.ios .navbar-bg::before,
+.ios .navbar .left,
+.ios .navbar .right,
+.ios .navbar .navbar-pane,
+.ios .subnavbar,
+.ios .popover,
+.ios .popover-inner,
+.ios .sheet-modal,
+.ios .actions-group,
+.ios .actions-grid::before,
+.ios .dialog,
+.ios .dialog-inner,
+.ios .toast,
+.ios .notification,
+.ios .fab > a {
+    backdrop-filter: none !important;
+    -webkit-backdrop-filter: none !important;
+}
+
+.ios .toolbar::before,
+.ios .navbar-bg::before {
+    display: none;
+}
+
+/* Shared Liquid Glass frosted surface */
 .ios .liquid-glass-surface,
 .ios .liquid-glass-toolbar .toolbar-pane {
     box-sizing: border-box;
     position: relative;
     background: var(--ebk-glass-bg);
-    backdrop-filter: var(--ebk-glass-blur);
-    -webkit-backdrop-filter: var(--ebk-glass-blur);
     box-shadow: var(--ebk-glass-shadow);
     border: var(--ebk-glass-border);
     border-radius: 9999px;
     overflow: hidden;
-    transition: box-shadow 180ms ease,
-                background-color 180ms ease;
+    transition: box-shadow 160ms ease,
+                background-color 160ms ease;
 
     /* Specular top-edge optical sheen */
     &::before {
@@ -33,13 +61,6 @@
     box-shadow: none !important;
     height: calc(var(--f7-toolbar-height) + var(--ebk-glass-toolbar-bottom-gap) + var(--f7-safe-area-bottom));
     pointer-events: none;
-
-    /* Avoid stacking a second full-width masked backdrop-filter behind the glass pill */
-    &::before {
-        display: none;
-        backdrop-filter: none;
-        -webkit-backdrop-filter: none;
-    }
 
     &::after {
         top: -20px;
@@ -121,8 +142,8 @@
             align-items: center;
             justify-content: center;
             color: var(--ebk-glass-tab-color);
-            transition: background-color 160ms ease,
-                        color 160ms ease;
+            transition: background-color 140ms ease,
+                        color 140ms ease;
 
             &::before {
                 display: none;
@@ -155,6 +176,7 @@
             &:active,
             &.active-state,
             &.tab-link-active {
+                opacity: 1 !important;
                 background: var(--ebk-glass-item-active-bg);
                 box-shadow: var(--ebk-glass-item-active-shadow);
                 color: var(--ebk-glass-tab-active-color);
@@ -172,8 +194,6 @@
         padding: 0;
         z-index: 5;
         background: var(--ebk-glass-orb-bg);
-        backdrop-filter: none;
-        -webkit-backdrop-filter: none;
         border: var(--ebk-glass-orb-border);
         box-shadow: var(--ebk-glass-orb-shadow);
 
@@ -200,7 +220,7 @@
             align-items: center;
             justify-content: center;
             color: var(--ebk-glass-orb-icon-color);
-            transition: background-color 160ms ease;
+            transition: background-color 140ms ease;
 
             @media (hover: hover) and (pointer: fine) {
                 &:hover {
@@ -210,6 +230,7 @@
 
             &:active,
             &.active-state {
+                opacity: 1 !important;
                 background: var(--ebk-glass-orb-tint-active);
             }
 
@@ -252,8 +273,8 @@
             font-size: 14px;
             font-weight: 500;
             color: var(--ebk-glass-tab-color);
-            transition: background-color 160ms ease,
-                        color 160ms ease;
+            transition: background-color 140ms ease,
+                        color 140ms ease;
 
             i.icon {
                 font-size: 20px;
@@ -270,6 +291,7 @@
 
             &:active:not(.disabled),
             &.active-state:not(.disabled) {
+                opacity: 1 !important;
                 background: var(--ebk-glass-item-active-bg);
             }
 
@@ -296,8 +318,8 @@
             padding: 0 !important;
             border-radius: 9999px;
             color: var(--ebk-glass-tab-color);
-            transition: background-color 160ms ease,
-                        color 160ms ease;
+            transition: background-color 140ms ease,
+                        color 140ms ease;
 
             @media (hover: hover) and (pointer: fine) {
                 &:hover:not(.disabled) {
@@ -308,6 +330,7 @@
 
             &:active:not(.disabled),
             &.active-state:not(.disabled) {
+                opacity: 1 !important;
                 background: var(--ebk-glass-item-active-bg);
             }
 
@@ -340,22 +363,13 @@
         letter-spacing: -0.02em;
     }
 
-    /* Avoid stacking a full-width masked blur behind the glass navbar pills */
-    .navbar-bg::before {
-        display: none;
-        backdrop-filter: none;
-        -webkit-backdrop-filter: none;
-    }
-
     .left,
     .right,
     .navbar-pane {
-        backdrop-filter: var(--ebk-glass-blur);
-        -webkit-backdrop-filter: var(--ebk-glass-blur);
         background: var(--ebk-glass-bg);
         box-shadow: var(--ebk-glass-shadow);
         border: var(--ebk-glass-border);
-        transition: background-color 160ms ease;
+        transition: background-color 140ms ease;
     }
 }
 
@@ -396,16 +410,7 @@
     }
 }
 
-/* Liquid Glass modals: popovers, sheets, actions, dialogs, FABs */
-.ios .popover,
-.ios .sheet-modal,
-.ios .actions-group,
-.ios .dialog-inner,
-.ios .fab > a {
-    backdrop-filter: var(--ebk-glass-blur);
-    -webkit-backdrop-filter: var(--ebk-glass-blur);
-}
-
+/* Liquid Glass modals: popovers, sheets, FABs */
 .ios .popover {
     border-radius: 22px;
     border: var(--ebk-glass-border);
@@ -418,28 +423,22 @@
 
 .ios .fab > a {
     border: var(--ebk-glass-border);
-    transition: background-color 160ms ease;
+    transition: background-color 140ms ease;
 }
 
-/* Pause expensive backdrop-filter blur during page slide transitions for 60fps on mid-range mobile GPUs */
-.ios .router-transition,
+/* GPU layer hints during page slide transitions for smooth 60fps on mid-range mobile GPUs */
 .ios .router-transition-forward,
-.ios .router-transition-backward,
-.ios .page-previous,
-.ios .page-next {
-    .liquid-glass-surface,
-    .liquid-glass-toolbar .toolbar-pane:not(.liquid-glass-center-orb),
-    .navbar .left,
-    .navbar .right,
-    .navbar .navbar-pane,
-    .fab > a {
-        backdrop-filter: none !important;
-        -webkit-backdrop-filter: none !important;
-        background: var(--ebk-glass-transition-bg);
+.ios .router-transition-backward {
+    .page-current,
+    .page-next,
+    .page-previous {
+        will-change: transform;
+        backface-visibility: hidden;
+        -webkit-backface-visibility: hidden;
     }
 }
 
-/* Respect reduced transparency / reduced motion accessibility preferences */
+/* Respect reduced motion accessibility preferences */
 @media (prefers-reduced-motion: reduce) {
     .ios .liquid-glass-surface,
     .ios .liquid-glass-toolbar .toolbar-pane,

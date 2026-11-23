@@ -1,5 +1,6 @@
 :root {
     --f7-navbar-height: 60px;
+    --f7-page-transition-duration: 280ms;
     --f7-list-item-media-margin: 12px;
     --f7-toolbar-inner-padding-left: 8px;
     --f7-toolbar-inner-padding-right: 8px;
@@ -11,10 +12,10 @@
     --f7-fab-extended-text-font-size: var(--f7-navbar-font-size);
     --f7-fab-extended-text-font-weight: inherit;
     --f7-fab-extended-text-transform: inherit;
-    --f7-glass-bg-color: rgba(255, 255, 255, 0.66);
-    --f7-glass-shadow: inset 0 1px 0 0 rgba(255, 255, 255, 0.92),
+    --f7-glass-bg-color: rgba(255, 255, 255, 0.92);
+    --f7-glass-shadow: inset 0 1px 0 0 rgba(255, 255, 255, 0.95),
                        0 0 0 0.5px rgba(15, 23, 42, 0.08),
-                       0 6px 20px -4px rgba(15, 23, 42, 0.14);
+                       0 6px 20px -4px rgba(15, 23, 42, 0.13);
     --f7-glass-shadow-fab: var(--f7-glass-shadow);
     --f7-card-border-radius: 22px;
     --f7-list-inset-border-radius: 20px;
@@ -32,13 +33,12 @@
     --ebk-chevron-icon-color: rgba(0, 0, 0, 0.2);
     --ebk-transaction-tag-chip-bg-color: rgba(0, 0, 0, 0.04);
 
-    /* Liquid Glass tokens (Light) */
+    /* Liquid Glass tokens (Light — GPU-friendly frosted surface without backdrop-filter blur) */
     --ebk-glass-toolbar-bottom-gap: 14px;
     --ebk-glass-toolbar-scrim-color: rgba(242, 242, 247, 0.78);
-    --ebk-glass-bg: rgba(255, 255, 255, 0.66);
-    --ebk-glass-transition-bg: rgba(255, 255, 255, 0.92);
-    --ebk-glass-blur: blur(12px) saturate(150%);
-    --ebk-glass-border: 1px solid rgba(255, 255, 255, 0.8);
+    --ebk-glass-bg: rgba(255, 255, 255, 0.92);
+    --ebk-glass-blur: none;
+    --ebk-glass-border: 1px solid rgba(255, 255, 255, 0.88);
     --ebk-glass-shadow: var(--f7-glass-shadow);
     --ebk-glass-orb-bg: linear-gradient(155deg, rgba(132, 112, 214, 0.96) 0%, rgba(101, 82, 178, 0.98) 100%);
     --ebk-glass-orb-border: 1px solid rgba(255, 255, 255, 0.48);
@@ -78,8 +78,8 @@
 }
 
 :root.dark {
-    --f7-glass-bg-color: rgba(38, 38, 46, 0.68);
-    --f7-glass-shadow: inset 0 1px 0 0 rgba(255, 255, 255, 0.24),
+    --f7-glass-bg-color: rgba(34, 34, 42, 0.92);
+    --f7-glass-shadow: inset 0 1px 0 0 rgba(255, 255, 255, 0.2),
                        0 0 0 0.5px rgba(0, 0, 0, 0.45),
                        0 8px 22px -4px rgba(0, 0, 0, 0.48);
     --f7-fab-bg-color: var(--f7-glass-bg-color);
@@ -93,12 +93,11 @@
     --ebk-chevron-icon-color: rgba(255, 255, 255, 0.3);
     --ebk-transaction-tag-chip-bg-color: rgba(255, 255, 255, 0.04);
 
-    /* Liquid Glass tokens (Dark) */
+    /* Liquid Glass tokens (Dark — GPU-friendly frosted surface without backdrop-filter blur) */
     --ebk-glass-toolbar-scrim-color: rgba(18, 18, 22, 0.8);
-    --ebk-glass-bg: rgba(36, 36, 44, 0.68);
-    --ebk-glass-transition-bg: rgba(36, 36, 44, 0.92);
-    --ebk-glass-blur: blur(12px) saturate(145%);
-    --ebk-glass-border: 1px solid rgba(255, 255, 255, 0.16);
+    --ebk-glass-bg: rgba(34, 34, 42, 0.92);
+    --ebk-glass-blur: none;
+    --ebk-glass-border: 1px solid rgba(255, 255, 255, 0.14);
     --ebk-glass-shadow: var(--f7-glass-shadow);
     --ebk-glass-orb-bg: linear-gradient(155deg, rgba(142, 122, 224, 0.96) 0%, rgba(103, 84, 182, 0.98) 100%);
     --ebk-glass-orb-border: 1px solid rgba(255, 255, 255, 0.28);

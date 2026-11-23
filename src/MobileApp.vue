@@ -63,7 +63,8 @@ const f7params = ref<Framework7Parameters>({
     })(),
     touch: {
         disableContextMenu: true,
-        tapHold: true
+        tapHold: true,
+        touchHighlight: false
     },
     serviceWorker: {
         path: isProduction() ? './sw.js' : undefined,
