@@ -6,30 +6,36 @@
 
         <overview-dashboard :layout="layout" :loading="loading" @navigate="onNavigate" />
 
-        <f7-toolbar tabbar icons bottom class="main-tabbar">
-            <f7-link class="link" href="/transaction/list" :aria-label="tt('Details')">
-                <f7-icon f7="square_list" aria-hidden="true"></f7-icon>
-                <span class="tabbar-label">{{ tt('Details') }}</span>
-            </f7-link>
-            <f7-link class="link" href="/account/list" :aria-label="tt('Accounts')">
-                <f7-icon f7="creditcard" aria-hidden="true"></f7-icon>
-                <span class="tabbar-label">{{ tt('Accounts') }}</span>
-            </f7-link>
+        <f7-toolbar tabbar icons bottom class="main-tabbar liquid-glass-toolbar liquid-glass-tabbar">
+            <f7-toolbar-pane class="liquid-glass-nav-pane">
+                <f7-link class="link" href="/transaction/list" :aria-label="tt('Details')">
+                    <f7-icon f7="square_list_fill" aria-hidden="true"></f7-icon>
+                    <span class="tabbar-label">{{ tt('Details') }}</span>
+                </f7-link>
+                <f7-link class="link" href="/account/list" :aria-label="tt('Accounts')">
+                    <f7-icon f7="creditcard_fill" aria-hidden="true"></f7-icon>
+                    <span class="tabbar-label">{{ tt('Accounts') }}</span>
+                </f7-link>
+                <div class="liquid-glass-center-spacer" aria-hidden="true"></div>
+                <f7-link class="link" href="/statistic/transaction" :aria-label="tt('Statistics')">
+                    <f7-icon f7="chart_pie_fill" aria-hidden="true"></f7-icon>
+                    <span class="tabbar-label">{{ tt('Statistics') }}</span>
+                </f7-link>
+                <f7-link class="link" href="/settings" :aria-label="tt('Settings')">
+                    <f7-icon f7="gear_alt_fill" aria-hidden="true"></f7-icon>
+                    <span class="tabbar-label">{{ tt('Settings') }}</span>
+                </f7-link>
+            </f7-toolbar-pane>
+
             <!-- "homepage-add-button" must have the "dragenabled" class, otherwise the popover disappears immediately after the second long press -->
-            <f7-link id="homepage-add-button" class="link dragenabled"
-                     href="/transaction/add"
-                     :aria-label="tt('Add Transaction')"
-                     @taphold="openTransactionTemplatePopover">
-                <f7-icon f7="plus_square" class="ebk-tarbar-big-icon" aria-hidden="true"></f7-icon>
-            </f7-link>
-            <f7-link class="link" href="/statistic/transaction" :aria-label="tt('Statistics')">
-                <f7-icon f7="chart_pie" aria-hidden="true"></f7-icon>
-                <span class="tabbar-label">{{ tt('Statistics') }}</span>
-            </f7-link>
-            <f7-link class="link" href="/settings" :aria-label="tt('Settings')">
-                <f7-icon f7="gear_alt" aria-hidden="true"></f7-icon>
-                <span class="tabbar-label">{{ tt('Settings') }}</span>
-            </f7-link>
+            <f7-toolbar-pane class="liquid-glass-center-orb">
+                <f7-link id="homepage-add-button" class="link icon-only dragenabled"
+                         href="/transaction/add"
+                         :aria-label="tt('Add Transaction')"
+                         @taphold="openTransactionTemplatePopover">
+                    <f7-icon f7="plus" class="ebk-tabbar-add-icon" aria-hidden="true"></f7-icon>
+                </f7-link>
+            </f7-toolbar-pane>
         </f7-toolbar>
 
         <f7-popover class="template-popover-menu" target-el="#homepage-add-button"

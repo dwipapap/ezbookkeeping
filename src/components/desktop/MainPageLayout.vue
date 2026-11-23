@@ -312,9 +312,9 @@ function showAddDialogInTransactionListPage(): void {
 
 <style>
 .top-navigation-button.v-btn {
-    width: 40px;
-    min-width: 40px;
-    border-radius: 10px;
+    width: 38px;
+    min-width: 38px;
+    border-radius: 9999px;
 }
 
 .top-navigation-button.v-btn:not(.v-btn--active) {
@@ -322,10 +322,10 @@ function showAddDialogInTransactionListPage(): void {
 }
 
 .add-transaction-button.v-btn {
-    --v-btn-height: 32px;
-    width: 38px;
-    min-width: 38px;
-    border-radius: 10px;
+    --v-btn-height: 36px;
+    width: 36px;
+    min-width: 36px;
+    border-radius: 9999px;
 }
 
 .user-avatar-image {

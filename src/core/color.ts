@@ -22,7 +22,7 @@ export class PresetAmountColor implements TypeAndName {
     public static readonly Red = new PresetAmountColor(2, 'Red', '#d43f3f', '#d43f3f', 'expense-amount-color-red', 'income-amount-color-red');
     public static readonly Yellow = new PresetAmountColor(3, 'Yellow', '#e2b60a', '#e2b60a', 'expense-amount-color-yellow', 'income-amount-color-yellow');
     public static readonly Blue = new PresetAmountColor(5, 'Blue', '#3873bf', '#3873bf', 'expense-amount-color-blue', 'income-amount-color-blue');
-    public static readonly BlackOrWhite = new PresetAmountColor(4, 'Black or White', '#413935', '#fcf0e3', 'expense-amount-color-blackorwhite', 'income-amount-color-blackorwhite');
+    public static readonly BlackOrWhite = new PresetAmountColor(4, 'Black or White', '#2d2a38', '#f2effa', 'expense-amount-color-blackorwhite', 'income-amount-color-blackorwhite');
 
     public static readonly DefaultExpenseColor = PresetAmountColor.Green;
     public static readonly DefaultIncomeColor = PresetAmountColor.Red;

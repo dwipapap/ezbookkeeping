@@ -113,23 +113,25 @@
             </f7-list-item>
         </f7-list>
 
-        <f7-toolbar tabbar bottom :class="{ 'compact-tabbar': true, 'toolbar-item-auto-size': true, 'disabled': loading }">
-            <f7-link :class="{ 'disabled': !supportCalendar || !calendarView || currentYearMonth <= minYearMonth }"
-                     :aria-label="tt('Previous Period')" @click="shiftMonth(-1)">
-                <f7-icon class="icon-with-direction" f7="arrow_left_square"></f7-icon>
-            </f7-link>
-            <f7-link :class="{ 'tabbar-text-with-ellipsis': true, 'disabled': !supportCalendar || !calendarView }" popover-open=".scheduled-month-popover-menu">
-                <span :class="{ 'tabbar-item-changed': currentYearMonth !== minYearMonth }">{{ displayMonth }}</span>
-            </f7-link>
-            <f7-link :class="{ 'disabled': !supportCalendar || !calendarView }" :aria-label="tt('Next Period')" @click="shiftMonth(1)">
-                <f7-icon class="icon-with-direction" f7="arrow_right_square"></f7-icon>
-            </f7-link>
-            <f7-link class="tabbar-text-with-ellipsis" :class="{ 'disabled': !supportCalendar }" @click="switchView(false)">
-                <span :class="{ 'tabbar-item-changed': !supportCalendar || !calendarView }">{{ tt('List View') }}</span>
-            </f7-link>
-            <f7-link class="tabbar-text-with-ellipsis" :class="{ 'disabled': !supportCalendar }" @click="switchView(true)">
-                <span :class="{ 'tabbar-item-changed': supportCalendar && calendarView }">{{ tt('Calendar View') }}</span>
-            </f7-link>
+        <f7-toolbar tabbar bottom :class="{ 'compact-tabbar': true, 'toolbar-item-auto-size': true, 'liquid-glass-toolbar': true, 'disabled': loading }">
+            <f7-toolbar-pane class="liquid-glass-compact-pane">
+                <f7-link :class="{ 'disabled': !supportCalendar || !calendarView || currentYearMonth <= minYearMonth }"
+                         :aria-label="tt('Previous Period')" @click="shiftMonth(-1)">
+                    <f7-icon class="icon-with-direction" f7="chevron_left"></f7-icon>
+                </f7-link>
+                <f7-link :class="{ 'tabbar-text-with-ellipsis': true, 'disabled': !supportCalendar || !calendarView }" popover-open=".scheduled-month-popover-menu">
+                    <span :class="{ 'tabbar-item-changed': currentYearMonth !== minYearMonth }">{{ displayMonth }}</span>
+                </f7-link>
+                <f7-link :class="{ 'disabled': !supportCalendar || !calendarView }" :aria-label="tt('Next Period')" @click="shiftMonth(1)">
+                    <f7-icon class="icon-with-direction" f7="chevron_right"></f7-icon>
+                </f7-link>
+                <f7-link class="tabbar-text-with-ellipsis" :class="{ 'disabled': !supportCalendar }" @click="switchView(false)">
+                    <span :class="{ 'tabbar-item-changed': !supportCalendar || !calendarView }">{{ tt('List View') }}</span>
+                </f7-link>
+                <f7-link class="tabbar-text-with-ellipsis" :class="{ 'disabled': !supportCalendar }" @click="switchView(true)">
+                    <span :class="{ 'tabbar-item-changed': supportCalendar && calendarView }">{{ tt('Calendar View') }}</span>
+                </f7-link>
+            </f7-toolbar-pane>
         </f7-toolbar>
 
         <f7-popover class="scheduled-month-popover-menu">

@@ -1,0 +1,436 @@
+/** iOS 26 Liquid Glass design system for mobile **/
+
+/* Shared Liquid Glass surface helper via CSS custom properties */
+.ios .liquid-glass-surface,
+.ios .liquid-glass-toolbar .toolbar-pane {
+    box-sizing: border-box;
+    position: relative;
+    background: var(--ebk-glass-bg);
+    backdrop-filter: var(--ebk-glass-blur);
+    -webkit-backdrop-filter: var(--ebk-glass-blur);
+    box-shadow: var(--ebk-glass-shadow);
+    border: var(--ebk-glass-border);
+    border-radius: 9999px;
+    overflow: hidden;
+    transition: transform 220ms cubic-bezier(0.22, 1, 0.36, 1),
+                box-shadow 220ms ease,
+                background-color 220ms ease;
+
+    /* Specular top-edge optical sheen */
+    &::before {
+        content: '';
+        position: absolute;
+        inset: 0;
+        border-radius: inherit;
+        background: var(--ebk-glass-specular-gradient);
+        pointer-events: none;
+        z-index: 0;
+    }
+}
+
+/* Floating bottom toolbar container */
+.ios .toolbar.toolbar-bottom.liquid-glass-toolbar {
+    background: transparent !important;
+    box-shadow: none !important;
+    height: calc(var(--f7-toolbar-height) + var(--ebk-glass-toolbar-bottom-gap) + var(--f7-safe-area-bottom));
+    pointer-events: none;
+
+    &::before {
+        top: -20px;
+        backdrop-filter: blur(4px);
+        -webkit-backdrop-filter: blur(4px);
+        mask-image: linear-gradient(to top, black calc(45% + var(--f7-safe-area-bottom, 0px)), transparent 100%);
+        -webkit-mask-image: linear-gradient(to top, black calc(45% + var(--f7-safe-area-bottom, 0px)), transparent 100%);
+    }
+
+    &::after {
+        top: -20px;
+        background-image: linear-gradient(to top, var(--ebk-glass-toolbar-scrim-color) calc(22% + var(--f7-safe-area-bottom, 0px)), transparent 100%);
+    }
+
+    > .toolbar-inner {
+        position: relative;
+        width: 100%;
+        max-width: 520px;
+        height: 100%;
+        margin-inline: auto;
+        padding-top: 0 !important;
+        padding-bottom: calc(var(--ebk-glass-toolbar-bottom-gap) + var(--f7-safe-area-bottom)) !important;
+        padding-inline-start: calc(16px + var(--f7-safe-area-left)) !important;
+        padding-inline-end: calc(16px + var(--f7-safe-area-right)) !important;
+        display: flex;
+        align-items: flex-end;
+        justify-content: center;
+        gap: 12px;
+        overflow: visible;
+        pointer-events: none;
+    }
+
+    .toolbar-pane {
+        pointer-events: auto;
+        height: var(--f7-toolbar-height);
+        width: auto;
+    }
+}
+
+/* Adjust scrollable page bottom clearance for floating Liquid Glass toolbars */
+.ios .toolbar.toolbar-bottom.liquid-glass-toolbar ~ .page-content {
+    --f7-page-toolbar-bottom-offset: calc(var(--f7-toolbar-height) + var(--ebk-glass-toolbar-bottom-gap) + 12px);
+}
+
+.ios .toolbar.toolbar-bottom.tabbar-icons.liquid-glass-tabbar {
+    height: calc(var(--f7-tabbar-icons-height) + var(--ebk-glass-toolbar-bottom-gap) + var(--f7-safe-area-bottom));
+
+    .toolbar-pane {
+        height: var(--f7-tabbar-icons-height);
+    }
+}
+
+.ios .toolbar.toolbar-bottom.tabbar-icons.liquid-glass-tabbar ~ .page-content {
+    --f7-page-toolbar-bottom-offset: calc(var(--f7-tabbar-icons-height) + var(--ebk-glass-toolbar-bottom-gap) + 12px);
+}
+
+/* Home Page Liquid Glass Dock + Pop-out Center '+' Orb (Option C) */
+.ios .toolbar.main-tabbar.liquid-glass-tabbar {
+    overflow: visible;
+
+    .toolbar-pane.liquid-glass-nav-pane {
+        flex: 1 1 auto;
+        width: 100%;
+        min-width: 0;
+        padding: 4px 6px;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 2px;
+
+        .liquid-glass-center-spacer {
+            flex: 0 0 68px;
+            height: 100%;
+            pointer-events: none;
+        }
+
+        > .link {
+            position: relative;
+            z-index: 1;
+            flex: 1 1 0;
+            min-width: 0;
+            height: 100%;
+            padding: 4px 4px !important;
+            border-radius: 9999px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            color: var(--ebk-glass-tab-color);
+            transition: transform 180ms cubic-bezier(0.22, 1, 0.36, 1),
+                        background-color 180ms ease,
+                        box-shadow 180ms ease,
+                        color 180ms ease;
+
+            &::before {
+                display: none;
+            }
+
+            i.icon {
+                font-size: 22px;
+                height: 22px;
+                line-height: 22px;
+                transition: transform 180ms cubic-bezier(0.22, 1, 0.36, 1);
+            }
+
+            i + span.tabbar-label {
+                margin-top: 3px;
+                font-size: 11px;
+                font-weight: 500;
+                letter-spacing: -0.01em;
+                line-height: 1.15;
+                max-width: 100%;
+                overflow: hidden;
+                text-overflow: ellipsis;
+            }
+
+            &:hover {
+                background: var(--ebk-glass-item-hover-bg);
+                color: var(--ebk-glass-tab-hover-color);
+            }
+
+            &:active,
+            &.active-state,
+            &.tab-link-active {
+                background: var(--ebk-glass-item-active-bg);
+                box-shadow: var(--ebk-glass-item-active-shadow);
+                color: var(--ebk-glass-tab-active-color);
+                transform: scale(0.95);
+            }
+        }
+    }
+
+    .toolbar-pane.liquid-glass-center-orb {
+        position: absolute;
+        left: 50%;
+        bottom: calc(var(--ebk-glass-toolbar-bottom-gap) + var(--f7-safe-area-bottom) + 12px);
+        transform: translateX(-50%);
+        width: 60px;
+        height: 60px;
+        padding: 0;
+        z-index: 5;
+        background: var(--ebk-glass-orb-bg);
+        border: var(--ebk-glass-orb-border);
+        box-shadow: var(--ebk-glass-orb-shadow);
+
+        &::before {
+            background: var(--ebk-glass-orb-specular-gradient);
+        }
+
+        &:hover {
+            transform: translateX(-50%) scale(1.05);
+            box-shadow: var(--ebk-glass-orb-hover-shadow);
+        }
+
+        &:active,
+        &:has(.active-state) {
+            transform: translateX(-50%) scale(0.94);
+        }
+
+        > .link {
+            position: relative;
+            z-index: 1;
+            width: 100%;
+            height: 100%;
+            min-width: 0;
+            min-height: 0;
+            padding: 0 !important;
+            border-radius: 9999px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: var(--ebk-glass-orb-icon-color);
+            transition: background-color 180ms ease;
+
+            &:hover {
+                background: var(--ebk-glass-orb-tint-hover);
+            }
+
+            &:active,
+            &.active-state {
+                background: var(--ebk-glass-orb-tint-active);
+            }
+
+            i.ebk-tabbar-add-icon {
+                font-size: 26px;
+                width: 26px;
+                height: 26px;
+                line-height: 26px;
+                font-weight: 600;
+            }
+        }
+    }
+}
+
+/* Compact Liquid Glass bottom toolbars (Transactions, Statistics, Schedules, Edit) */
+.ios .toolbar.toolbar-bottom.compact-tabbar.liquid-glass-toolbar {
+    --f7-toolbar-height: 52px;
+
+    > .toolbar-inner {
+        max-width: 560px;
+        gap: 10px;
+    }
+
+    .toolbar-pane.liquid-glass-compact-pane {
+        flex: 1 1 auto;
+        min-width: 0;
+        padding: 4px 8px;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 2px;
+
+        > .link {
+            position: relative;
+            z-index: 1;
+            height: calc(var(--f7-toolbar-height) - 8px);
+            min-width: 34px !important;
+            padding: 0 8px !important;
+            border-radius: 9999px;
+            font-size: 14px;
+            font-weight: 500;
+            color: var(--ebk-glass-tab-color);
+            transition: transform 180ms cubic-bezier(0.22, 1, 0.36, 1),
+                        background-color 180ms ease,
+                        color 180ms ease;
+
+            i.icon {
+                font-size: 20px;
+                height: 20px;
+                line-height: 20px;
+            }
+
+            &:hover:not(.disabled) {
+                background: var(--ebk-glass-item-hover-bg);
+                color: var(--ebk-glass-tab-hover-color);
+            }
+
+            &:active:not(.disabled),
+            &.active-state:not(.disabled) {
+                background: var(--ebk-glass-item-active-bg);
+                transform: scale(0.95);
+            }
+
+            &.tabbar-text-with-ellipsis {
+                flex: 1 1 auto;
+                min-width: 0 !important;
+            }
+        }
+    }
+
+    .toolbar-pane.liquid-glass-compact-orb {
+        flex: 0 0 var(--f7-toolbar-height);
+        width: var(--f7-toolbar-height);
+        height: var(--f7-toolbar-height);
+        padding: 0;
+
+        &:hover {
+            transform: scale(1.035);
+        }
+
+        &:active,
+        &:has(.active-state) {
+            transform: scale(0.93);
+        }
+
+        > .link {
+            position: relative;
+            z-index: 1;
+            width: 100%;
+            height: 100%;
+            min-width: 0 !important;
+            min-height: 0 !important;
+            padding: 0 !important;
+            border-radius: 9999px;
+            color: var(--ebk-glass-tab-color);
+
+            i.icon {
+                font-size: 20px;
+                height: 20px;
+                line-height: 20px;
+            }
+        }
+    }
+
+    .toolbar-pane.liquid-glass-primary-pane {
+        flex: 0 1 280px;
+        width: auto;
+        justify-content: center;
+        padding: 4px 12px;
+
+        > .link {
+            width: 100%;
+            justify-content: center;
+            font-weight: 600;
+        }
+    }
+}
+
+/* Navbar Liquid Glass refinement */
+.ios .navbar {
+    .title {
+        font-weight: 650;
+        letter-spacing: -0.02em;
+    }
+
+    .left,
+    .right,
+    .navbar-pane {
+        backdrop-filter: var(--ebk-glass-blur);
+        -webkit-backdrop-filter: var(--ebk-glass-blur);
+        background: var(--ebk-glass-bg);
+        box-shadow: var(--ebk-glass-shadow);
+        border: var(--ebk-glass-border);
+        transition: transform 180ms cubic-bezier(0.22, 1, 0.36, 1),
+                    background-color 180ms ease;
+
+        &:active {
+            transform: scale(0.96);
+        }
+    }
+}
+
+/* Overview cards & inset lists refinement to harmonize with Liquid Glass chrome */
+.ios .mobile-overview-dashboard {
+    .card {
+        border-radius: var(--f7-card-border-radius);
+        box-shadow: var(--ebk-card-elevation-shadow);
+        border: var(--ebk-card-hairline-border);
+        overflow: hidden;
+    }
+
+    .home-summary-card {
+        position: relative;
+        box-shadow: var(--ebk-summary-card-shadow);
+
+        &::after {
+            content: '';
+            position: absolute;
+            inset: 0;
+            border-radius: inherit;
+            background: linear-gradient(
+                145deg,
+                rgba(255, 255, 255, 0.24) 0%,
+                rgba(255, 255, 255, 0.05) 38%,
+                rgba(255, 255, 255, 0) 65%,
+                rgba(0, 0, 0, 0.06) 100%
+            );
+            box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.32);
+            pointer-events: none;
+        }
+    }
+
+    .list.inset > ul {
+        border-radius: var(--f7-list-inset-border-radius);
+        box-shadow: var(--ebk-card-elevation-shadow);
+        border: var(--ebk-card-hairline-border);
+    }
+}
+
+/* Liquid Glass modals: popovers, sheets, actions, dialogs, FABs */
+.ios .popover,
+.ios .sheet-modal,
+.ios .actions-group,
+.ios .dialog-inner,
+.ios .fab > a {
+    backdrop-filter: var(--ebk-glass-blur);
+    -webkit-backdrop-filter: var(--ebk-glass-blur);
+}
+
+.ios .popover {
+    border-radius: 22px;
+    border: var(--ebk-glass-border);
+}
+
+.ios .sheet-modal {
+    border-top-left-radius: 28px;
+    border-top-right-radius: 28px;
+}
+
+.ios .fab > a {
+    border: var(--ebk-glass-border);
+    transition: transform 200ms cubic-bezier(0.22, 1, 0.36, 1);
+
+    &:active {
+        transform: scale(0.94);
+    }
+}
+
+/* Respect reduced transparency / reduced motion accessibility preferences */
+@media (prefers-reduced-motion: reduce) {
+    .ios .liquid-glass-surface,
+    .ios .liquid-glass-toolbar .toolbar-pane,
+    .ios .toolbar.main-tabbar.liquid-glass-tabbar .toolbar-pane.liquid-glass-nav-pane > .link,
+    .ios .toolbar.toolbar-bottom.compact-tabbar.liquid-glass-toolbar .toolbar-pane.liquid-glass-compact-pane > .link,
+    .ios .navbar .left,
+    .ios .navbar .right,
+    .ios .navbar .navbar-pane {
+        transition: none;
+    }
+}

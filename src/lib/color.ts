@@ -71,7 +71,7 @@ export function getContrastIconColor(backgroundColor: ColorValue): ColorValue {
     const normalizedColor = backgroundColor.replace(/^#/, '');
 
     if (!/^[0-9a-fA-F]{6}$/.test(normalizedColor) || normalizedColor.toLowerCase() === DEFAULT_MOBILE_OVERVIEW_WIDGET_LIGHT_BACKGROUND_COLOR) {
-        return '7f5e4b';
+        return '3b2e7a';
     } else if (normalizedColor.toLowerCase() === DEFAULT_MOBILE_OVERVIEW_WIDGET_DARK_BACKGROUND_COLOR) {
         return 'ffffff99';
     }

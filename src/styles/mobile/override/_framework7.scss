@@ -135,7 +135,7 @@ html[dir="rtl"] :not(.no-chevron) {
     background-color: inherit;
 }
 
-.toolbar.toolbar-bottom .toolbar-inner {
+.toolbar.toolbar-bottom:not(.liquid-glass-toolbar) .toolbar-inner {
     padding-bottom: 0 !important;
     gap: 2px;
 
@@ -144,14 +144,14 @@ html[dir="rtl"] :not(.no-chevron) {
     }
 }
 
-.toolbar-item-auto-size .toolbar-inner {
+.toolbar-item-auto-size:not(.liquid-glass-toolbar) .toolbar-inner {
     padding-inline-start: 16px;
     padding-inline-end: 16px;
     justify-content: space-between;
     gap: 4px;
 }
 
-.toolbar-item-auto-size .toolbar-inner > .link {
+.toolbar-item-auto-size:not(.liquid-glass-toolbar) .toolbar-inner > .link {
     width: auto;
     min-width: 28px !important;
 }

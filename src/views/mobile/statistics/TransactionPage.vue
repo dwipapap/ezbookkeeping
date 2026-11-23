@@ -281,28 +281,30 @@
             </f7-list>
         </f7-popover>
 
-        <f7-toolbar tabbar bottom :class="{ 'compact-tabbar': true, 'toolbar-item-auto-size': true, 'disabled': loading }">
-            <f7-link :class="{ 'disabled': reloading || !canShiftDateRange }" :aria-label="tt('Previous Period')" @click="shiftDateRange(-1)">
-                <f7-icon class="icon-with-direction" f7="arrow_left_square"></f7-icon>
-            </f7-link>
-            <f7-link :class="{ 'tabbar-text-with-ellipsis': true, 'disabled': reloading || !canChangeDateRange }" popover-open=".date-popover-menu">
-                <span :class="{ 'tabbar-item-changed': isQueryDateRangeChanged }">{{ queryDateRangeName }}</span>
-            </f7-link>
-            <f7-link :class="{ 'disabled': reloading || !canShiftDateRange }" :aria-label="tt('Next Period')" @click="shiftDateRange(1)">
-                <f7-icon class="icon-with-direction" f7="arrow_right_square"></f7-icon>
-            </f7-link>
-            <f7-link :class="{ 'tabbar-text-with-ellipsis': true, 'disabled': reloading }" popover-open=".date-aggregation-popover-menu"
-                     v-if="analysisType === StatisticsAnalysisType.TrendAnalysis">
-                <span :class="{ 'tabbar-item-changed': trendDateAggregationType !== ChartDateAggregationType.Default.type }">{{ queryTrendDateAggregationTypeName }}</span>
-            </f7-link>
-            <f7-link :class="{ 'tabbar-text-with-ellipsis': true, 'disabled': reloading }" popover-open=".date-aggregation-popover-menu"
-                     v-if="analysisType === StatisticsAnalysisType.AssetTrends">
-                <span :class="{ 'tabbar-item-changed': assetTrendsDateAggregationType !== ChartDateAggregationType.Default.type }">{{ queryAssetTrendsDateAggregationTypeName }}</span>
-            </f7-link>
-            <f7-link class="tabbar-text-with-ellipsis" :key="chartType.type"
-                     v-for="chartType in allChartTypes" @click="setChartType(chartType.type)">
-                <span :class="{ 'tabbar-item-changed': queryChartType === chartType.type }">{{ chartType.displayName }}</span>
-            </f7-link>
+        <f7-toolbar tabbar bottom :class="{ 'compact-tabbar': true, 'toolbar-item-auto-size': true, 'liquid-glass-toolbar': true, 'disabled': loading }">
+            <f7-toolbar-pane class="liquid-glass-compact-pane">
+                <f7-link :class="{ 'disabled': reloading || !canShiftDateRange }" :aria-label="tt('Previous Period')" @click="shiftDateRange(-1)">
+                    <f7-icon class="icon-with-direction" f7="chevron_left"></f7-icon>
+                </f7-link>
+                <f7-link :class="{ 'tabbar-text-with-ellipsis': true, 'disabled': reloading || !canChangeDateRange }" popover-open=".date-popover-menu">
+                    <span :class="{ 'tabbar-item-changed': isQueryDateRangeChanged }">{{ queryDateRangeName }}</span>
+                </f7-link>
+                <f7-link :class="{ 'disabled': reloading || !canShiftDateRange }" :aria-label="tt('Next Period')" @click="shiftDateRange(1)">
+                    <f7-icon class="icon-with-direction" f7="chevron_right"></f7-icon>
+                </f7-link>
+                <f7-link :class="{ 'tabbar-text-with-ellipsis': true, 'disabled': reloading }" popover-open=".date-aggregation-popover-menu"
+                         v-if="analysisType === StatisticsAnalysisType.TrendAnalysis">
+                    <span :class="{ 'tabbar-item-changed': trendDateAggregationType !== ChartDateAggregationType.Default.type }">{{ queryTrendDateAggregationTypeName }}</span>
+                </f7-link>
+                <f7-link :class="{ 'tabbar-text-with-ellipsis': true, 'disabled': reloading }" popover-open=".date-aggregation-popover-menu"
+                         v-if="analysisType === StatisticsAnalysisType.AssetTrends">
+                    <span :class="{ 'tabbar-item-changed': assetTrendsDateAggregationType !== ChartDateAggregationType.Default.type }">{{ queryAssetTrendsDateAggregationTypeName }}</span>
+                </f7-link>
+                <f7-link class="tabbar-text-with-ellipsis" :key="chartType.type"
+                         v-for="chartType in allChartTypes" @click="setChartType(chartType.type)">
+                    <span :class="{ 'tabbar-item-changed': queryChartType === chartType.type }">{{ chartType.displayName }}</span>
+                </f7-link>
+            </f7-toolbar-pane>
         </f7-toolbar>
 
         <f7-popover class="date-popover-menu"
