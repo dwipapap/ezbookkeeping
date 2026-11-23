@@ -48,25 +48,29 @@
             </f7-list>
         </f7-popover>
 
-        <f7-toolbar tabbar bottom class="compact-tabbar toolbar-item-auto-size transaction-list-toolbar">
-            <f7-link :class="{ 'disabled': loading || query.dateType === DateRange.All.type }" :aria-label="tt('Previous Period')" @click="shiftDateRange(query.minTime, query.maxTime, -1)">
-                <f7-icon class="icon-with-direction" f7="arrow_left_square"></f7-icon>
-            </f7-link>
-            <f7-link popover-open=".date-popover-menu" :class="{ 'tabbar-text-with-ellipsis': true, 'disabled': loading }">
-                <span :class="{ 'tabbar-item-changed': query.dateType !== DateRange.All.type }">{{ queryDateRangeName }}</span>
-            </f7-link>
-            <f7-link :class="{ 'disabled': loading || query.dateType === DateRange.All.type }" :aria-label="tt('Next Period')" @click="shiftDateRange(query.minTime, query.maxTime, 1)">
-                <f7-icon class="icon-with-direction" f7="arrow_right_square"></f7-icon>
-            </f7-link>
-            <f7-link popover-open=".category-popover-menu" :class="{ 'tabbar-text-with-ellipsis': true, 'disabled': loading || query.type === 1 }">
-                <span :class="{ 'tabbar-item-changed': query.categoryIds }">{{ queryCategoryName }}</span>
-            </f7-link>
-            <f7-link popover-open=".account-popover-menu" :class="{ 'tabbar-text-with-ellipsis': true, 'disabled': loading }">
-                <span :class="{ 'tabbar-item-changed': query.accountIds }">{{ queryAccountName }}</span>
-            </f7-link>
-            <f7-link popover-open=".more-popover-menu" :class="{ 'disabled': loading }" :aria-label="tt('More')">
-                <f7-icon f7="ellipsis_vertical" :class="{ 'tabbar-item-changed': query.type > 0 || query.amountFilter || query.tagFilter }"></f7-icon>
-            </f7-link>
+        <f7-toolbar tabbar bottom class="compact-tabbar toolbar-item-auto-size transaction-list-toolbar liquid-glass-toolbar">
+            <f7-toolbar-pane class="liquid-glass-compact-pane">
+                <f7-link :class="{ 'disabled': loading || query.dateType === DateRange.All.type }" :aria-label="tt('Previous Period')" @click="shiftDateRange(query.minTime, query.maxTime, -1)">
+                    <f7-icon class="icon-with-direction" f7="chevron_left"></f7-icon>
+                </f7-link>
+                <f7-link popover-open=".date-popover-menu" :class="{ 'tabbar-text-with-ellipsis': true, 'disabled': loading }">
+                    <span :class="{ 'tabbar-item-changed': query.dateType !== DateRange.All.type }">{{ queryDateRangeName }}</span>
+                </f7-link>
+                <f7-link :class="{ 'disabled': loading || query.dateType === DateRange.All.type }" :aria-label="tt('Next Period')" @click="shiftDateRange(query.minTime, query.maxTime, 1)">
+                    <f7-icon class="icon-with-direction" f7="chevron_right"></f7-icon>
+                </f7-link>
+                <f7-link popover-open=".category-popover-menu" :class="{ 'tabbar-text-with-ellipsis': true, 'disabled': loading || query.type === 1 }">
+                    <span :class="{ 'tabbar-item-changed': query.categoryIds }">{{ queryCategoryName }}</span>
+                </f7-link>
+                <f7-link popover-open=".account-popover-menu" :class="{ 'tabbar-text-with-ellipsis': true, 'disabled': loading }">
+                    <span :class="{ 'tabbar-item-changed': query.accountIds }">{{ queryAccountName }}</span>
+                </f7-link>
+            </f7-toolbar-pane>
+            <f7-toolbar-pane class="liquid-glass-compact-orb">
+                <f7-link popover-open=".more-popover-menu" :class="{ 'disabled': loading }" :aria-label="tt('More')">
+                    <f7-icon f7="ellipsis" :class="{ 'tabbar-item-changed': query.type > 0 || query.amountFilter || query.tagFilter }"></f7-icon>
+                </f7-link>
+            </f7-toolbar-pane>
         </f7-toolbar>
 
         <f7-block class="transaction-calendar-container" :class="{ 'margin-vertical': showSearchbar, 'margin-vertical-half': !showSearchbar }"

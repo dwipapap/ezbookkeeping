@@ -197,7 +197,7 @@ const chartOptions = computed<object>(() => {
             },
             splitArea: {
                 areaStyle: {
-                    color: (!props.skeleton && radarData.value.allSeries.length) ? (isDarkMode.value ? ['#363534', '#1a1a1a'] : ['#faf8f4', '#fff']) : ['#d3d3d3', '#d3d3d3']
+                    color: (!props.skeleton && radarData.value.allSeries.length) ? (isDarkMode.value ? ['#282636', '#181720'] : ['#f7f6fa', '#fff']) : ['#d3d3d3', '#d3d3d3']
                 }
             },
             indicator: radarData.value.indicators

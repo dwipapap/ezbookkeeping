@@ -160,7 +160,7 @@ export default defineConfig(() => {
                     name: 'ezBookkeeping',
                     short_name: 'ezBookkeeping',
                     description: 'An open source, powerful, self-hosted personal finance app that is easy to use.',
-                    theme_color: '#C67E48',
+                    theme_color: '#6B58B8',
                     background_color: '#F6F7F8',
                     start_url: './',
                     scope: './',

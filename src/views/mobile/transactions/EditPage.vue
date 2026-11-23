@@ -490,10 +490,12 @@
             </f7-fab>
         </template>
 
-        <f7-toolbar id="quick-save-button" class="compact-tabbar" tabbar bottom v-if="quickSaveButtonStyleType === TransactionQuickSaveButtonStyle.BottomFixed.type && mode !== TransactionEditPageMode.View">
-            <f7-link :class="{ 'disabled': inputIsEmpty || submitting || recognizing }" @click="quickSave">
-                <span class="tabbar-primary-link">{{ tt(quickSaveButtonTitle) }}</span>
-            </f7-link>
+        <f7-toolbar id="quick-save-button" class="compact-tabbar liquid-glass-toolbar" tabbar bottom v-if="quickSaveButtonStyleType === TransactionQuickSaveButtonStyle.BottomFixed.type && mode !== TransactionEditPageMode.View">
+            <f7-toolbar-pane class="liquid-glass-compact-pane liquid-glass-primary-pane">
+                <f7-link :class="{ 'disabled': inputIsEmpty || submitting || recognizing }" @click="quickSave">
+                    <span class="tabbar-primary-link">{{ tt(quickSaveButtonTitle) }}</span>
+                </f7-link>
+            </f7-toolbar-pane>
         </f7-toolbar>
 
         <f7-popover class="quick-save-popover" target-el="#quick-save-button"

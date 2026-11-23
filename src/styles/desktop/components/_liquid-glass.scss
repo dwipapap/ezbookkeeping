@@ -1,0 +1,388 @@
+/** macOS 26 Liquid Glass design system for Desktop (Single Floating Glass Bar + Frosted Bento) **/
+
+/* Ambient canvas mesh so Liquid Glass surfaces visibly refract soft light */
+.layout-wrapper.layout-nav-type-vertical {
+    background:
+        radial-gradient(circle at 6% 4%, var(--ebk-desktop-ambient-1), transparent 34rem),
+        radial-gradient(circle at 92% 6%, var(--ebk-desktop-ambient-2), transparent 36rem),
+        radial-gradient(circle at 52% 54%, var(--ebk-desktop-ambient-3), transparent 42rem),
+        radial-gradient(circle at 86% 94%, var(--ebk-desktop-ambient-4), transparent 38rem),
+        var(--ebk-desktop-canvas-bg) !important;
+}
+
+/* Seamless Docked Liquid Glass Top Bar & Sidebar (pixel-aligned Overview <-> Sub-page transitions) */
+.layout-wrapper.layout-nav-type-vertical {
+    --ebk-glass-gap: 14px;
+    --ebk-glass-navbar-height: 60px;
+}
+
+.layout-wrapper .layout-page-content {
+    padding: var(--ebk-glass-gap);
+}
+
+.layout-wrapper .layout-navbar {
+    position: sticky;
+    top: 0;
+    z-index: 1000;
+    margin: 0;
+    min-height: var(--ebk-glass-navbar-height);
+    border: 0;
+    border-block-end: 1px solid var(--ebk-glass-dock-border);
+    border-radius: 0;
+    background: var(--ebk-glass-chrome-bg);
+    box-shadow: var(--ebk-glass-dock-shadow);
+    backdrop-filter: var(--ebk-glass-chrome-blur);
+    -webkit-backdrop-filter: var(--ebk-glass-chrome-blur);
+    overflow: visible;
+    transition: box-shadow 200ms ease, background-color 200ms ease;
+
+    &::before {
+        content: '';
+        position: absolute;
+        inset: 0;
+        background: var(--ebk-glass-specular-gradient);
+        pointer-events: none;
+        z-index: 0;
+    }
+
+    .navbar-content-container {
+        position: relative;
+        z-index: 1;
+        height: var(--ebk-glass-navbar-height);
+        padding-inline: 20px;
+    }
+
+    .navbar-content {
+        gap: 4px;
+    }
+
+    .app-logo {
+        .main-logo {
+            width: 1.75rem;
+            height: 1.75rem;
+            border-radius: 8px;
+            filter: drop-shadow(0 3px 8px rgba(var(--ebk-primary-color), 0.28));
+        }
+
+        .app-title {
+            font-size: 1.125rem;
+            font-weight: 700;
+            letter-spacing: -0.02em;
+        }
+    }
+
+    .app-top-toolbar {
+        align-items: center;
+        gap: 2px;
+        overflow: visible !important;
+        scrollbar-width: none;
+
+        &::-webkit-scrollbar {
+            display: none;
+        }
+    }
+
+    @media (min-width: 1145px) {
+        .app-top-toolbar-without-navbar {
+            position: absolute;
+            inset-block-start: 50%;
+            inset-inline-start: calc(var(--ebk-sidebar-width) + 20px);
+            transform: translateY(-50%);
+        }
+    }
+
+    @media (max-width: 599px) {
+        .app-top-toolbar {
+            overflow-x: auto !important;
+            overflow-y: hidden !important;
+            padding: 8px 10px;
+            margin: -8px -10px;
+        }
+    }
+
+    /* Circular Liquid Glass nav buttons */
+    .top-navigation-button.v-btn {
+        width: 38px;
+        height: 38px;
+        min-width: 38px;
+        border-radius: 9999px;
+        color: var(--ebk-glass-nav-icon-color) !important;
+        transition: transform 180ms cubic-bezier(0.22, 1, 0.36, 1),
+                    background-color 180ms ease,
+                    box-shadow 180ms ease,
+                    color 180ms ease;
+
+        .v-btn__overlay {
+            display: none;
+        }
+
+        &:hover:not(.v-btn--active) {
+            background: var(--ebk-glass-pill-hover-bg);
+            color: var(--ebk-glass-nav-icon-hover-color) !important;
+        }
+
+        &.v-btn--active {
+            background: var(--ebk-glass-pill-active-bg) !important;
+            color: var(--ebk-glass-nav-icon-active-color) !important;
+            box-shadow: var(--ebk-glass-pill-active-shadow);
+        }
+
+        &:active {
+            transform: scale(0.93);
+        }
+    }
+
+    /* Glossy Purple Liquid Glass '+' Orb */
+    .add-transaction-button.v-btn {
+        --v-btn-height: 36px;
+        width: 36px;
+        height: 36px;
+        min-width: 36px;
+        border-radius: 9999px;
+        background: var(--ebk-glass-orb-bg) !important;
+        border: var(--ebk-glass-orb-border);
+        box-shadow: var(--ebk-glass-orb-shadow) !important;
+        color: #ffffff !important;
+        transition: transform 180ms cubic-bezier(0.22, 1, 0.36, 1),
+                    box-shadow 180ms ease;
+
+        .v-btn__overlay {
+            display: none;
+        }
+
+        &:hover:not(.v-btn--disabled) {
+            background: var(--ebk-glass-orb-bg) !important;
+            box-shadow: var(--ebk-glass-orb-hover-shadow) !important;
+            transform: scale(1.06);
+        }
+
+        &:active:not(.v-btn--disabled) {
+            transform: scale(0.93);
+        }
+    }
+
+    /* Right utility icon buttons & avatar */
+    .navbar-content > .v-btn {
+        width: 36px;
+        height: 36px;
+        border-radius: 9999px;
+        transition: transform 180ms cubic-bezier(0.22, 1, 0.36, 1),
+                    background-color 180ms ease;
+
+        &:hover {
+            background: var(--ebk-glass-pill-hover-bg);
+        }
+
+        &:active {
+            transform: scale(0.93);
+        }
+    }
+
+    .navbar-content > .v-avatar {
+        width: 36px !important;
+        height: 36px !important;
+        box-shadow: var(--ebk-glass-avatar-ring);
+        transition: transform 180ms cubic-bezier(0.22, 1, 0.36, 1);
+
+        &:hover {
+            transform: scale(1.04);
+        }
+    }
+}
+
+/* Seamless Docked Liquid Glass Sidebar for sub-pages */
+.layout-wrapper .layout-vertical-nav {
+    inset-block: 0;
+    inset-inline-start: 0;
+    width: var(--ebk-sidebar-width);
+    border: 0;
+    border-inline-end: 1px solid var(--ebk-glass-dock-border);
+    border-radius: 0;
+    background: var(--ebk-glass-sidebar-bg);
+    backdrop-filter: var(--ebk-glass-chrome-blur);
+    -webkit-backdrop-filter: var(--ebk-glass-chrome-blur);
+    box-shadow: var(--ebk-glass-sidebar-shadow);
+
+    .nav-header {
+        min-height: var(--ebk-glass-navbar-height);
+        height: var(--ebk-glass-navbar-height);
+        padding-inline: 20px;
+
+        .app-logo {
+            .main-logo {
+                width: 1.75rem;
+                height: 1.75rem;
+                border-radius: 8px;
+                filter: drop-shadow(0 3px 8px rgba(var(--ebk-primary-color), 0.28));
+            }
+
+            .app-title {
+                font-size: 1.125rem;
+                font-weight: 700;
+                letter-spacing: -0.02em;
+            }
+        }
+    }
+
+    .nav-link > a {
+        border-radius: 12px;
+        transition: background-color 160ms ease, color 160ms ease, box-shadow 160ms ease;
+
+        &::after {
+            display: none;
+        }
+
+        &:hover {
+            background: var(--ebk-glass-pill-hover-bg);
+        }
+    }
+
+    .nav-link > .router-link-exact-active {
+        background: var(--ebk-glass-pill-active-bg) !important;
+        color: var(--ebk-glass-nav-icon-active-color) !important;
+        box-shadow: var(--ebk-glass-pill-active-shadow);
+        font-weight: 600;
+    }
+}
+
+/* Frosted Liquid Glass Cards & Overview Widgets */
+.v-card.v-card--variant-elevated:not(.dialog-layout-card) {
+    border: var(--ebk-glass-card-border);
+    border-radius: 20px;
+    background: var(--ebk-glass-card-bg);
+    box-shadow: var(--ebk-glass-card-shadow);
+    backdrop-filter: var(--ebk-glass-card-blur);
+    -webkit-backdrop-filter: var(--ebk-glass-card-blur);
+}
+
+.overview-widget {
+    border: var(--ebk-glass-card-border) !important;
+    border-radius: 20px !important;
+    background: var(--ebk-glass-card-bg) !important;
+    box-shadow: var(--ebk-glass-card-shadow) !important;
+    backdrop-filter: var(--ebk-glass-card-blur);
+    -webkit-backdrop-filter: var(--ebk-glass-card-blur);
+    transition: box-shadow 200ms ease, border-color 200ms ease;
+
+    &:hover {
+        box-shadow: var(--ebk-glass-card-hover-shadow) !important;
+    }
+
+    .overview-widget__title {
+        font-weight: 650;
+        letter-spacing: -0.015em;
+    }
+
+    .overview-widget__footer {
+        border-block-start-color: var(--ebk-glass-divider);
+    }
+
+    .overview-widget__item-icon {
+        border-radius: 11px;
+        background: var(--ebk-glass-subtle-fill);
+    }
+
+    .overview-widget__list-item {
+        border-radius: 12px;
+        transition: background-color 150ms ease;
+
+        &:hover {
+            background: var(--ebk-glass-subtle-fill);
+        }
+    }
+}
+
+/* Hero Monthly Expense Widget — Lavender Liquid Glass Wash */
+.monthly-expense-widget {
+    background: var(--ebk-glass-hero-bg) !important;
+
+    .monthly-expense-widget__income {
+        border: var(--ebk-glass-chip-border);
+        background: var(--ebk-glass-chip-bg);
+        box-shadow: var(--ebk-glass-chip-shadow);
+        backdrop-filter: blur(10px);
+        -webkit-backdrop-filter: blur(10px);
+    }
+
+    .monthly-expense-widget__details {
+        border-radius: 9999px !important;
+        font-weight: 600;
+    }
+}
+
+/* Expense Category Ranking progress tracks */
+.expense-ranking-widget__progress .v-progress-linear {
+    border-radius: 9999px;
+    overflow: hidden;
+}
+
+/* Transaction Calendar glass polish */
+.transaction-calendar-container .dp--main {
+    .dp--menu {
+        --dp-border-radius: 12px;
+        background: transparent;
+        border: 0;
+    }
+
+    .dp--calendar .dp--calendar-row {
+        --dp-primary-color: var(--ebk-glass-pill-active-bg);
+
+        > .dp--calendar-item > .dp--cell-inner {
+            border-radius: 11px;
+            transition: background-color 150ms ease, box-shadow 150ms ease;
+
+            &.dp--active-date,
+            &.dp--today {
+                box-shadow: inset 0 0 0 1px rgba(var(--ebk-primary-color), 0.42),
+                            inset 0 1px 0 rgba(255, 255, 255, 0.5);
+            }
+        }
+    }
+}
+
+/* Liquid Glass Overlays: Menus, Dropdowns, Dialogs, Tooltips, Snackbars */
+.v-menu > .v-overlay__content,
+.v-autocomplete__content.v-overlay__content,
+.v-select__content.v-overlay__content {
+    > .v-card,
+    > .v-sheet,
+    > .v-list {
+        border: var(--ebk-glass-chrome-border) !important;
+        border-radius: 16px !important;
+        background: var(--ebk-glass-popover-bg) !important;
+        box-shadow: var(--ebk-glass-popover-shadow) !important;
+        backdrop-filter: var(--ebk-glass-chrome-blur);
+        -webkit-backdrop-filter: var(--ebk-glass-chrome-blur);
+    }
+}
+
+.v-dialog > .v-overlay__content > .v-card {
+    border: var(--ebk-glass-chrome-border);
+    border-radius: 22px !important;
+    background: var(--ebk-glass-dialog-bg);
+    box-shadow: var(--ebk-glass-popover-shadow);
+    backdrop-filter: var(--ebk-glass-chrome-blur);
+    -webkit-backdrop-filter: var(--ebk-glass-chrome-blur);
+}
+
+.v-list-item {
+    border-radius: 10px;
+}
+
+.v-snackbar .v-snackbar__wrapper {
+    border-radius: 14px !important;
+    backdrop-filter: blur(18px) saturate(180%);
+    -webkit-backdrop-filter: blur(18px) saturate(180%);
+}
+
+/* Respect reduced motion */
+@media (prefers-reduced-motion: reduce) {
+    .layout-wrapper .layout-navbar,
+    .layout-wrapper .layout-navbar .top-navigation-button.v-btn,
+    .layout-wrapper .layout-navbar .add-transaction-button.v-btn,
+    .layout-wrapper .layout-navbar .navbar-content > .v-btn,
+    .layout-wrapper .layout-navbar .navbar-content > .v-avatar,
+    .overview-widget {
+        transition: none;
+    }
+}

@@ -111,11 +111,17 @@
         background: var(--f7-theme-color);
         color: #fff;
         box-shadow: 0 8px 20px rgba(var(--ebk-primary-color), 0.22);
+
+        &:hover,
+        &:active {
+            background: #5a48a3;
+        }
     }
 
     .login-page-secondary-action > .list-button {
-        border: 1px solid rgba(var(--ebk-primary-color), 0.65);
-        background: rgba(var(--ebk-primary-color), 0.04);
+        border: 1px solid rgba(var(--ebk-primary-color), 0.35);
+        background: var(--ebk-primary-soft);
+        color: var(--ebk-on-primary-soft);
     }
 
     .login-page-primary-action > .list-button:focus-visible,

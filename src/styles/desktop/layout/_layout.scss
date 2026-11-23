@@ -105,8 +105,8 @@
         }
 
         > .router-link-exact-active {
-            background: linear-gradient(110deg, rgba(var(--v-theme-primary), 0.15), rgba(var(--v-theme-primary), 0.06));
-            color: rgb(var(--v-theme-primary));
+            background: linear-gradient(110deg, rgb(var(--v-theme-primary-soft)), rgba(var(--v-theme-primary-soft), 0.55));
+            color: rgb(var(--v-theme-on-primary-soft));
 
             &::after {
                 opacity: 1;
@@ -114,8 +114,8 @@
             }
 
             &:hover {
-                background: linear-gradient(110deg, rgba(var(--v-theme-primary), 0.15), rgba(var(--v-theme-primary), 0.06));
-                color: rgb(var(--v-theme-primary));
+                background: linear-gradient(110deg, rgb(var(--v-theme-primary-soft)), rgba(var(--v-theme-primary-soft), 0.55));
+                color: rgb(var(--v-theme-on-primary-soft));
             }
         }
     }
