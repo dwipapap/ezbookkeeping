@@ -1,5 +1,11 @@
 import type { GenericNameValue } from './base.ts';
 
+const OVERVIEW_COVER_FILE_NAME_REGEX = /^[0-9a-f]{32}\.(jpg|jpeg|png|gif|webp)$/i;
+
+export function isValidOverviewCoverFileName(fileName: unknown): fileName is string {
+    return typeof fileName === 'string' && OVERVIEW_COVER_FILE_NAME_REGEX.test(fileName);
+}
+
 export enum OverviewWidgetType {
     AssetSummary = 'asset-summary',
     AccountBalanceList = 'account-balance-list',
@@ -40,7 +46,7 @@ export interface OverviewWidgetCustomSelectSettingValue extends GenericNameValue
 }
 
 interface OverviewWidgetSettingItemBase {
-    settingType: 'itemCountSelect' | 'monthSelect' | 'accountSelect' | 'categorySelect' | 'tagSelect' | 'customSelect' | 'switch' | 'color' | 'amount' | 'amountFilter' | 'textbox';
+    settingType: 'itemCountSelect' | 'monthSelect' | 'accountSelect' | 'categorySelect' | 'tagSelect' | 'customSelect' | 'switch' | 'color' | 'amount' | 'amountFilter' | 'textbox' | 'backgroundImage' | 'slider';
     settingName: string;
     displayName: string;
     condition?: (settings?: Record<string, OverviewWidgetSettingValue>) => boolean;
@@ -98,6 +104,19 @@ export interface OverviewWidgetTextboxSettingItem extends OverviewWidgetSettingI
     placeholder?: string;
 }
 
+export interface OverviewWidgetBackgroundImageSettingItem extends OverviewWidgetSettingItemBase {
+    settingType: 'backgroundImage';
+}
+
+export interface OverviewWidgetSliderSettingItem extends OverviewWidgetSettingItemBase {
+    settingType: 'slider';
+    min: number;
+    max: number;
+    step: number;
+    defaultValue: number;
+    unit?: string;
+}
+
 export type OverviewWidgetSettingItem = OverviewWidgetItemCountSelectSettingItem |
     OverviewWidgetMonthSelectSettingItem |
     OverviewWidgetAccountSelectSettingItem |
@@ -108,7 +127,9 @@ export type OverviewWidgetSettingItem = OverviewWidgetItemCountSelectSettingItem
     OverviewWidgetColorSettingItem |
     OverviewWidgetAmountSettingItem |
     OverviewWidgetAmountFilterSettingItem |
-    OverviewWidgetTextboxSettingItem;
+    OverviewWidgetTextboxSettingItem |
+    OverviewWidgetBackgroundImageSettingItem |
+    OverviewWidgetSliderSettingItem;
 
 export interface OverviewWidgetSettingContext {
     aiTextRecognitionEnabled: boolean;

@@ -260,4 +260,74 @@ describe('mobile overview layout', () => {
         expect(layout).not.toBe(DEFAULT_MOBILE_OVERVIEW_LAYOUT);
         expect(layout.widgets).not.toBe(DEFAULT_MOBILE_OVERVIEW_LAYOUT.widgets);
     });
+
+    test('normalizes custom background image settings on desktop and mobile current month overview', () => {
+        const validCover = '0123456789abcdef0123456789abcdef.webp';
+        const desktopLayout = normalizeDesktopOverviewLayout({
+            widgets: [
+                {
+                    id: 'hero-valid',
+                    type: OverviewWidgetType.CurrentMonthOverview,
+                    x: 0,
+                    y: 0,
+                    w: 4,
+                    h: 3,
+                    settings: {
+                        backgroundImage: validCover,
+                        backgroundImagePositionY: 25,
+                        backgroundImageOverlayOpacity: 40,
+                        backgroundImageTextColor: 'dark'
+                    }
+                },
+                {
+                    id: 'hero-invalid',
+                    type: OverviewWidgetType.CurrentMonthOverview,
+                    x: 4,
+                    y: 0,
+                    w: 4,
+                    h: 3,
+                    settings: {
+                        backgroundImage: '../evil.png',
+                        backgroundImagePositionY: 999,
+                        backgroundImageOverlayOpacity: -5,
+                        backgroundImageTextColor: 'blue'
+                    }
+                }
+            ]
+        });
+
+        expect(desktopLayout.widgets[0]?.settings).toEqual({
+            backgroundImage: validCover,
+            backgroundImagePositionY: 25,
+            backgroundImageOverlayOpacity: 40,
+            backgroundImageTextColor: 'dark'
+        });
+        expect(desktopLayout.widgets[1]?.settings).toEqual({});
+
+        const mobileLayout = normalizeMobileOverviewLayout({
+            widgets: [
+                {
+                    id: 'mobile-hero',
+                    type: OverviewWidgetType.CurrentMonthOverview,
+                    settings: {
+                        height: 2,
+                        backgroundImage: validCover,
+                        backgroundImagePositionY: 75,
+                        backgroundImageOverlayOpacity: 50,
+                        backgroundImageTextColor: 'light'
+                    }
+                }
+            ]
+        });
+
+        expect(mobileLayout.widgets[0]?.settings).toEqual({
+            height: 2,
+            lightBackgroundColor: 'e6e0fa',
+            darkBackgroundColor: '463882',
+            backgroundImage: validCover,
+            backgroundImagePositionY: 75,
+            backgroundImageOverlayOpacity: 50,
+            backgroundImageTextColor: 'light'
+        });
+    });
 });

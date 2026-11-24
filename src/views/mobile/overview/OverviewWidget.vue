@@ -24,6 +24,10 @@
     <monthly-expense-overview-widget :loading="loading" :height="widget.settings['height'] as number"
                                      :light-background-color="widget.settings['lightBackgroundColor'] as ColorValue"
                                      :dark-background-color="widget.settings['darkBackgroundColor'] as ColorValue"
+                                     :background-image="widget.settings['backgroundImage'] as string"
+                                     :background-image-position-y="widget.settings['backgroundImagePositionY'] as number"
+                                     :background-image-overlay-opacity="widget.settings['backgroundImageOverlayOpacity'] as number"
+                                     :background-image-text-color="widget.settings['backgroundImageTextColor'] as string"
                                      v-else-if="widget.type === OverviewWidgetType.CurrentMonthOverview" />
 
     <monthly-expense-progress-widget :loading="loading" :title="widgetTitle"

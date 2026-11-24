@@ -344,6 +344,11 @@ func startWebServer(c *core.CliContext) error {
 				apiV1Route.POST("/users/avatar/remove.json", bindApi(api.Users.UserRemoveAvatarHandler, config, core.USER_TOKEN_TYPE_NORMAL))
 			}
 
+			// Overview Widget Covers
+			apiV1Route.POST("/users/overview_covers/upload.json", bindApi(api.OverviewCovers.OverviewCoverUploadHandler, config, core.USER_TOKEN_TYPE_NORMAL))
+			apiV1Route.POST("/users/overview_covers/delete.json", bindApi(api.OverviewCovers.OverviewCoverDeleteHandler, config, core.USER_TOKEN_TYPE_NORMAL))
+			apiV1Route.GET("/users/overview_covers/get/:fileName", bindImage(api.OverviewCovers.OverviewCoverGetHandler, config))
+
 			if config.EnableUserVerifyEmail {
 				apiV1Route.POST("/users/verify_email/resend.json", bindApi(api.Users.UserSendVerifyEmailByLoginedUserHandler, config))
 			}

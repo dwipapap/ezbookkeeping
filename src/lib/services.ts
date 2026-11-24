@@ -469,6 +469,24 @@ export default {
     removeAvatar: (): ApiResponsePromise<UserProfileResponse> => {
         return axios.post<ApiResponse<UserProfileResponse>>('v1/users/avatar/remove.json');
     },
+    uploadOverviewCover: ({ coverFile }: { coverFile: File }): ApiResponsePromise<{ fileName: string }> => {
+        return axios.postForm<ApiResponse<{ fileName: string }>>('v1/users/overview_covers/upload.json', {
+            cover: coverFile
+        }, {
+            timeout: DEFAULT_UPLOAD_API_TIMEOUT
+        });
+    },
+    deleteOverviewCover: ({ fileName }: { fileName: string }): ApiResponsePromise<boolean> => {
+        return axios.post<ApiResponse<boolean>>('v1/users/overview_covers/delete.json', {
+            fileName
+        });
+    },
+    getOverviewCoverBlob: ({ fileName }: { fileName: string }): Promise<AxiosResponse<Blob>> => {
+        return axios.get<Blob>(`v1/users/overview_covers/get/${encodeURIComponent(fileName)}`, {
+            responseType: 'blob',
+            ignoreError: true
+        } as ApiRequestConfig);
+    },
     resendVerifyEmailByLoginedUser: (): ApiResponsePromise<boolean> => {
         return axios.post<ApiResponse<boolean>>('v1/users/verify_email/resend.json');
     },

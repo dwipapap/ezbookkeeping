@@ -9,12 +9,14 @@ import (
 const avatarPathPrefix = "avatar"
 const userCustomIconPathPrefix = "icon"
 const transactionPicturePathPrefix = "transaction"
+const overviewCoverPathPrefix = "overview_cover"
 
 // StorageContainer contains the current object storage
 type StorageContainer struct {
 	avatarCurrentStorage             ObjectStorage
 	userCustomIconCurrentStorage     ObjectStorage
 	transactionPictureCurrentStorage ObjectStorage
+	overviewCoverCurrentStorage      ObjectStorage
 }
 
 // Initialize a object storage container singleton instance
@@ -53,6 +55,14 @@ func InitializeStorageContainer(config *settings.Config) error {
 
 		Container.transactionPictureCurrentStorage = transactionPictureStorage
 	}
+
+	overviewCoverStorage, err := newObjectStorage(config, overviewCoverPathPrefix)
+
+	if err != nil {
+		return err
+	}
+
+	Container.overviewCoverCurrentStorage = overviewCoverStorage
 
 	return nil
 }
@@ -163,6 +173,42 @@ func (s *StorageContainer) DeleteTransactionPicture(ctx core.Context, path strin
 	}
 
 	return s.transactionPictureCurrentStorage.Delete(ctx, path)
+}
+
+// ExistsOverviewCover returns whether the overview cover file exists in the current overview cover object storage
+func (s *StorageContainer) ExistsOverviewCover(ctx core.Context, path string) (bool, error) {
+	if s.overviewCoverCurrentStorage == nil {
+		return false, errs.ErrSystemError
+	}
+
+	return s.overviewCoverCurrentStorage.Exists(ctx, path)
+}
+
+// ReadOverviewCover returns the overview cover file from the current overview cover object storage
+func (s *StorageContainer) ReadOverviewCover(ctx core.Context, path string) (ObjectInStorage, bool, error) {
+	if s.overviewCoverCurrentStorage == nil {
+		return nil, false, errs.ErrSystemError
+	}
+
+	return s.overviewCoverCurrentStorage.Read(ctx, path)
+}
+
+// SaveOverviewCover saves the overview cover file into the current overview cover object storage
+func (s *StorageContainer) SaveOverviewCover(ctx core.Context, path string, object ObjectInStorage) error {
+	if s.overviewCoverCurrentStorage == nil {
+		return errs.ErrSystemError
+	}
+
+	return s.overviewCoverCurrentStorage.Save(ctx, path, object)
+}
+
+// DeleteOverviewCover deletes the overview cover file from the current overview cover object storage
+func (s *StorageContainer) DeleteOverviewCover(ctx core.Context, path string) error {
+	if s.overviewCoverCurrentStorage == nil {
+		return errs.ErrSystemError
+	}
+
+	return s.overviewCoverCurrentStorage.Delete(ctx, path)
 }
 
 func newObjectStorage(config *settings.Config, pathPrefix string) (ObjectStorage, error) {

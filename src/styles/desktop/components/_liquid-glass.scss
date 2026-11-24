@@ -294,14 +294,16 @@
 
 /* Hero Monthly Expense Widget — Lavender Liquid Glass Wash */
 .monthly-expense-widget {
-    background: var(--ebk-glass-hero-bg) !important;
+    &:not(.monthly-expense-widget--has-cover) {
+        background: var(--ebk-glass-hero-bg) !important;
 
-    .monthly-expense-widget__income {
-        border: var(--ebk-glass-chip-border);
-        background: var(--ebk-glass-chip-bg);
-        box-shadow: var(--ebk-glass-chip-shadow);
-        backdrop-filter: blur(10px);
-        -webkit-backdrop-filter: blur(10px);
+        .monthly-expense-widget__income {
+            border: var(--ebk-glass-chip-border);
+            background: var(--ebk-glass-chip-bg);
+            box-shadow: var(--ebk-glass-chip-shadow);
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+        }
     }
 
     .monthly-expense-widget__details {

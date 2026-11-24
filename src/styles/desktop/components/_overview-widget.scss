@@ -410,6 +410,115 @@
             opacity: 0.78;
         }
     }
+
+    &.monthly-expense-widget--has-cover {
+        position: relative;
+        background-color: rgb(var(--v-theme-surface));
+
+        &::after {
+            display: none;
+        }
+
+        .monthly-expense-widget__cover-overlay {
+            position: absolute;
+            inset: 0;
+            z-index: 0;
+            pointer-events: none;
+        }
+
+        > .v-card-item,
+        > .v-card-text {
+            position: relative;
+            z-index: 1;
+        }
+
+        .monthly-expense-widget__content {
+            width: 100%;
+        }
+
+        &.monthly-expense-widget--cover-light-text {
+            color: #ffffff;
+
+            .monthly-expense-widget__title-row,
+            .monthly-expense-widget__expense-amount {
+                color: #ffffff;
+                text-shadow: 0 1px 6px rgba(0, 0, 0, 0.35);
+            }
+
+            .monthly-expense-widget__muted {
+                color: rgba(255, 255, 255, 0.84);
+            }
+
+            .monthly-expense-widget__action-btn,
+            .monthly-expense-widget__eye-btn {
+                color: rgba(255, 255, 255, 0.92);
+            }
+
+            .monthly-expense-widget__income {
+                background: rgba(15, 13, 28, 0.44);
+                border-color: rgba(255, 255, 255, 0.22);
+                color: #ffffff;
+                backdrop-filter: blur(8px);
+                -webkit-backdrop-filter: blur(8px);
+            }
+
+            .monthly-expense-widget__income-label {
+                color: rgba(255, 255, 255, 0.84);
+            }
+
+            .monthly-expense-widget__income-dot {
+                background: #c8bcff;
+                box-shadow: 0 0 0 0.22rem rgba(200, 188, 255, 0.24);
+            }
+
+            .monthly-expense-widget__details {
+                background: rgba(255, 255, 255, 0.22);
+                color: #ffffff;
+                border: 1px solid rgba(255, 255, 255, 0.32);
+                backdrop-filter: blur(8px);
+                -webkit-backdrop-filter: blur(8px);
+            }
+        }
+
+        &.monthly-expense-widget--cover-dark-text {
+            color: #1c1c24;
+
+            .monthly-expense-widget__title-row,
+            .monthly-expense-widget__expense-amount {
+                color: #1c1c24;
+                text-shadow: 0 1px 4px rgba(255, 255, 255, 0.45);
+            }
+
+            .monthly-expense-widget__muted {
+                color: rgba(28, 28, 36, 0.72);
+            }
+
+            .monthly-expense-widget__action-btn,
+            .monthly-expense-widget__eye-btn {
+                color: rgba(28, 28, 36, 0.85);
+            }
+
+            .monthly-expense-widget__income {
+                background: rgba(255, 255, 255, 0.72);
+                border-color: rgba(28, 28, 36, 0.1);
+                color: #1c1c24;
+                backdrop-filter: blur(8px);
+                -webkit-backdrop-filter: blur(8px);
+            }
+
+            .monthly-expense-widget__income-label {
+                color: rgba(28, 28, 36, 0.72);
+            }
+
+            .monthly-expense-widget__details {
+                background: rgba(255, 255, 255, 0.76);
+                color: #2b2259;
+                border: 1px solid rgba(28, 28, 36, 0.12);
+                backdrop-filter: blur(8px);
+                -webkit-backdrop-filter: blur(8px);
+            }
+        }
+    }
 }
 
 .period-income-expense-widget__body {

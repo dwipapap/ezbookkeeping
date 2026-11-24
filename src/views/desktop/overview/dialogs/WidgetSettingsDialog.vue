@@ -3,7 +3,7 @@
         <one-column-dialog-layout :title="tt('Widget Settings')" :cancel-button-title="tt('Cancel')"
                                   @cancel="cancel">
             <template #toolbar>
-                <v-btn class="mx-2" density="comfortable" variant="outlined" @click="confirm">{{ tt('Apply') }}</v-btn>
+                <v-btn class="mx-2" density="comfortable" variant="outlined" :disabled="uploadingCoverImage" @click="confirm">{{ tt('Apply') }}</v-btn>
             </template>
 
             <template #content>
@@ -63,7 +63,7 @@
                         <v-select :class="{ 'mt-4': index > 0 }" item-title="name" item-value="value"
                                   :label="tt(setting.displayName)" :items="getCustomSelectOptions(setting)"
                                   :multiple="setting.multiple" :chips="setting.multiple" :closable-chips="setting.multiple"
-                                  :model-value="getSettingValue(setting.settingName)"
+                                  :model-value="getCustomSelectModelValue(setting)"
                                   @update:model-value="updateSettingValue(setting, $event)"
                                   v-else-if="setting.settingType === 'customSelect' && (!setting.condition || setting.condition(widget?.settings))">
                             <template #item="{ props, internalItem }">
@@ -98,6 +98,61 @@
                                       :model-value="getSettingValue(setting.settingName)"
                                       @update:model-value="updateSettingValue(setting, $event)"
                                       v-else-if="setting.settingType === 'textbox' && (!setting.condition || setting.condition(widget?.settings))" />
+
+                        <div :class="{ 'mt-4': index > 0 }"
+                             v-else-if="setting.settingType === 'backgroundImage' && (!setting.condition || setting.condition(widget?.settings))">
+                            <div class="text-body-medium font-weight-medium mb-2">{{ tt(setting.displayName) }}</div>
+
+                            <div class="overview-cover-preview"
+                                 :class="{
+                                     'overview-cover-preview--has-image': !!coverPreviewUrl,
+                                     'overview-cover-preview--dark-text': coverPreviewIsDarkText,
+                                     'overview-cover-preview--dragging': isDraggingCover
+                                 }"
+                                 :style="coverPreviewCardStyle"
+                                 @dragover.prevent="isDraggingCover = true"
+                                 @dragleave.prevent="isDraggingCover = false"
+                                 @drop.prevent="onCoverFileDrop($event, setting)">
+                                <div class="overview-cover-preview__overlay" :style="coverPreviewOverlayStyle" v-if="coverPreviewUrl"></div>
+                                <div class="overview-cover-preview__content">
+                                    <div class="text-title-medium font-weight-bold">
+                                        {{ previewMonthTitle }} · <span class="overview-cover-preview__muted">{{ tt('Expense') }}</span>
+                                    </div>
+                                    <div class="text-headline-small font-weight-bold mt-1">Rp 0</div>
+                                    <div class="overview-cover-preview__pill mt-2">{{ tt('Monthly income') }} Rp 0</div>
+                                    <div class="text-body-small overview-cover-preview__muted mt-2" v-if="!coverPreviewUrl">
+                                        {{ tt('No custom background image set') }}
+                                    </div>
+                                </div>
+                            </div>
+
+                            <input ref="coverFileInput" type="file" accept="image/jpeg,image/png,image/webp,image/gif"
+                                   class="d-none" @change="onCoverFileSelected($event, setting)" />
+
+                            <div class="d-flex align-center ga-2 mt-3">
+                                <v-btn color="primary" variant="tonal" size="small" :loading="uploadingCoverImage"
+                                       @click="triggerCoverFilePicker">
+                                    {{ getSettingValue(setting.settingName) ? tt('Change Image') : tt('Upload Image') }}
+                                </v-btn>
+                                <v-btn color="error" variant="text" size="small" :disabled="uploadingCoverImage"
+                                       v-if="getSettingValue(setting.settingName)"
+                                       @click="removeCoverImage(setting)">
+                                    {{ tt('Remove Image') }}
+                                </v-btn>
+                            </div>
+                        </div>
+
+                        <div :class="{ 'mt-4': index > 0 }"
+                             v-else-if="setting.settingType === 'slider' && (!setting.condition || setting.condition(widget?.settings))">
+                            <div class="d-flex justify-space-between align-center mb-1">
+                                <span class="text-body-medium">{{ tt(setting.displayName) }}</span>
+                                <span class="text-body-small text-medium-emphasis">{{ getSliderValue(setting) }}{{ setting.unit ?? '' }}</span>
+                            </div>
+                            <v-slider color="primary" density="compact" hide-details
+                                      :min="setting.min" :max="setting.max" :step="setting.step"
+                                      :model-value="getSliderValue(setting)"
+                                      @update:model-value="updateSettingValue(setting, Math.round($event))" />
+                        </div>
                     </template>
                 </div>
 
@@ -128,7 +183,7 @@ import AccountFilterSettingsDialog from '@/views/desktop/common/dialogs/AccountF
 import CategoryFilterSettingsDialog from '@/views/desktop/common/dialogs/CategoryFilterSettingsDialog.vue';
 import TransactionTagFilterSettingsDialog from '@/views/desktop/common/dialogs/TransactionTagFilterSettingsDialog.vue';
 
-import { ref, computed } from 'vue';
+import { ref, computed, useTemplateRef } from 'vue';
 
 import { useI18n } from '@/locales/helpers.ts';
 
@@ -144,6 +199,7 @@ import {
     type OverviewWidgetSettingValue,
     type OverviewWidgetCustomSelectSettingValue,
     type OverviewWidgetCustomSelectSettingItem,
+    type OverviewWidgetSliderSettingItem,
     type OverviewWidgetSettingItem,
     type OverviewWidgetSettingContext,
     type DesktopOverviewWidgetLayout
@@ -151,14 +207,25 @@ import {
 
 import { DESKTOP_OVERVIEW_WIDGET_DEFINITIONS } from '@/consts/overview_layout.ts';
 
-import { isDefined, isArray, isString, isObjectEmpty, arrayItemToObjectField } from '@/lib/common.ts';
+import { isDefined, isArray, isString, isInteger, isObjectEmpty, arrayItemToObjectField } from '@/lib/common.ts';
 import { cloneWidget, getOverviewWidgetSettingContext } from '@/lib/overview_layout.ts';
+import {
+    DEFAULT_OVERVIEW_COVER_POSITION_Y,
+    DEFAULT_OVERVIEW_COVER_OVERLAY_OPACITY,
+    DEFAULT_OVERVIEW_COVER_TEXT_COLOR,
+    getCachedOverviewCoverObjectUrl,
+    getOverviewCoverObjectUrl,
+    uploadOverviewCoverImage,
+    deleteOverviewCoverImage,
+    buildOverviewCoverOverlayGradient
+} from '@/lib/overview_cover.ts';
 
 const {
     tt,
     joinMultiText,
     formatNumberToLocalizedNumerals,
-    getTablePageOptions
+    getTablePageOptions,
+    getAllLongMonthNames
 } = useI18n();
 
 const userStore = useUserStore();
@@ -167,11 +234,17 @@ const transactionCategoriesStore = useTransactionCategoriesStore();
 const transactionTagsStore = useTransactionTagsStore();
 const desktopPageStore = useDesktopPageStore();
 
+const coverFileInput = useTemplateRef<HTMLInputElement[]>('coverFileInput');
+
 let resolveFunc: ((widget: DesktopOverviewWidgetLayout) => void) | null = null;
 let rejectFunc: ((reason?: unknown) => void) | null = null;
 
 const showState = ref<boolean>(false);
 const loading = ref<boolean>(false);
+const uploadingCoverImage = ref<boolean>(false);
+const isDraggingCover = ref<boolean>(false);
+const coverPreviewUrl = ref<string | null>(null);
+const sessionUploadedCovers = ref<string[]>([]);
 const widget = ref<DesktopOverviewWidgetLayout | null>(null);
 const currentSettingItem = ref<OverviewWidgetSettingItem | undefined>(undefined);
 const showFilterAccountsDialog = ref<boolean>(false);
@@ -184,6 +257,43 @@ const hasAnyTransactionCategory = computed<boolean>(() => !isObjectEmpty(transac
 
 const supportsSettings = computed<OverviewWidgetSettingItem[]>(() => widget.value ? DESKTOP_OVERVIEW_WIDGET_DEFINITIONS[widget.value.type]?.supportsSettings ?? [] : []);
 const widgetSettingsContext = computed<OverviewWidgetSettingContext>(() => getOverviewWidgetSettingContext());
+const previewMonthTitle = computed<string>(() => getAllLongMonthNames()[new Date().getMonth()] || 'Month');
+
+const coverPreviewIsDarkText = computed<boolean>(() => {
+    const color = widget.value?.settings['backgroundImageTextColor'];
+    return (isString(color) ? color : DEFAULT_OVERVIEW_COVER_TEXT_COLOR) === 'dark';
+});
+
+const coverPreviewCardStyle = computed<Record<string, string>>(() => {
+    const style: Record<string, string> = {};
+
+    if (!coverPreviewUrl.value) {
+        return style;
+    }
+
+    const posY = isInteger(widget.value?.settings['backgroundImagePositionY'])
+        ? widget.value.settings['backgroundImagePositionY'] as number
+        : DEFAULT_OVERVIEW_COVER_POSITION_Y;
+
+    style['backgroundImage'] = `url("${coverPreviewUrl.value}")`;
+    style['backgroundSize'] = 'cover';
+    style['backgroundRepeat'] = 'no-repeat';
+    style['backgroundPosition'] = `center ${posY}%`;
+    return style;
+});
+
+const coverPreviewOverlayStyle = computed<Record<string, string>>(() => {
+    const opacity = isInteger(widget.value?.settings['backgroundImageOverlayOpacity'])
+        ? widget.value.settings['backgroundImageOverlayOpacity'] as number
+        : DEFAULT_OVERVIEW_COVER_OVERLAY_OPACITY;
+    const textColor = isString(widget.value?.settings['backgroundImageTextColor'])
+        ? widget.value.settings['backgroundImageTextColor'] as string
+        : DEFAULT_OVERVIEW_COVER_TEXT_COLOR;
+
+    return {
+        background: buildOverviewCoverOverlayGradient(opacity, textColor)
+    };
+});
 
 function getItemCountOptions(values: number[]): NameNumeralValue[] {
     return getTablePageOptions(values, undefined, false, true);
@@ -202,6 +312,19 @@ function getCustomSelectOptions(setting: OverviewWidgetCustomSelectSettingItem):
         value: item.value,
         disabled: item.disabled
     }));
+}
+
+function getCustomSelectModelValue(setting: OverviewWidgetCustomSelectSettingItem): OverviewWidgetSettingValue | undefined {
+    const val = getSettingValue(setting.settingName);
+    if (!isDefined(val) && setting.settingName === 'backgroundImageTextColor') {
+        return DEFAULT_OVERVIEW_COVER_TEXT_COLOR;
+    }
+    return val;
+}
+
+function getSliderValue(setting: OverviewWidgetSliderSettingItem): number {
+    const val = getSettingValue(setting.settingName);
+    return isInteger(val) ? val : setting.defaultValue;
 }
 
 function getSettingValue(settingName: string): OverviewWidgetSettingValue | undefined {
@@ -237,6 +360,88 @@ function updateSettingValue(setting: OverviewWidgetSettingItem, value: OverviewW
     } else {
         widget.value.settings[setting.settingName] = value;
     }
+}
+
+function triggerCoverFilePicker(): void {
+    const inputs = coverFileInput.value;
+    const input = isArray(inputs) ? inputs[0] : (inputs as unknown as HTMLInputElement | null);
+    if (input) {
+        input.value = '';
+        input.click();
+    }
+}
+
+async function handleCoverFile(file: File, setting: OverviewWidgetSettingItem): Promise<void> {
+    if (!widget.value) {
+        return;
+    }
+
+    uploadingCoverImage.value = true;
+    try {
+        const { fileName, objectUrl } = await uploadOverviewCoverImage(file);
+        sessionUploadedCovers.value.push(fileName);
+        widget.value.settings[setting.settingName] = fileName;
+
+        if (!isInteger(widget.value.settings['backgroundImagePositionY'])) {
+            widget.value.settings['backgroundImagePositionY'] = DEFAULT_OVERVIEW_COVER_POSITION_Y;
+        }
+        if (!isInteger(widget.value.settings['backgroundImageOverlayOpacity'])) {
+            widget.value.settings['backgroundImageOverlayOpacity'] = DEFAULT_OVERVIEW_COVER_OVERLAY_OPACITY;
+        }
+        if (!isString(widget.value.settings['backgroundImageTextColor'])) {
+            widget.value.settings['backgroundImageTextColor'] = DEFAULT_OVERVIEW_COVER_TEXT_COLOR;
+        }
+
+        coverPreviewUrl.value = objectUrl;
+    } catch (error) {
+        desktopPageStore.addErrorToast(error as Error);
+    } finally {
+        uploadingCoverImage.value = false;
+    }
+}
+
+function onCoverFileSelected(event: Event, setting: OverviewWidgetSettingItem): void {
+    const target = event.target as HTMLInputElement | null;
+    const file = target?.files?.[0];
+    if (file) {
+        handleCoverFile(file, setting);
+    }
+}
+
+function onCoverFileDrop(event: DragEvent, setting: OverviewWidgetSettingItem): void {
+    isDraggingCover.value = false;
+    const file = event.dataTransfer?.files?.[0];
+    if (file && file.type.startsWith('image/')) {
+        handleCoverFile(file, setting);
+    }
+}
+
+function removeCoverImage(setting: OverviewWidgetSettingItem): void {
+    if (!widget.value) {
+        return;
+    }
+
+    delete widget.value.settings[setting.settingName];
+    delete widget.value.settings['backgroundImagePositionY'];
+    delete widget.value.settings['backgroundImageOverlayOpacity'];
+    delete widget.value.settings['backgroundImageTextColor'];
+    coverPreviewUrl.value = null;
+}
+
+function loadCoverPreview(): void {
+    const fileName = widget.value?.settings['backgroundImage'];
+    if (!isString(fileName) || !fileName) {
+        coverPreviewUrl.value = null;
+        return;
+    }
+
+    coverPreviewUrl.value = getCachedOverviewCoverObjectUrl(fileName);
+    const requested = fileName;
+    getOverviewCoverObjectUrl(requested).then(url => {
+        if (widget.value?.settings['backgroundImage'] === requested) {
+            coverPreviewUrl.value = url;
+        }
+    });
 }
 
 function getFilteredAccountsDisplayContent(setting: OverviewWidgetSettingItem): string {
@@ -346,14 +551,27 @@ function updateTagValue(changed: boolean, textualTagFilter?: string): void {
     showFilterTransactionTagsDialog.value = false;
 }
 
+function cleanupUnusedSessionUploads(keepFileName?: string): void {
+    for (const fileName of sessionUploadedCovers.value) {
+        if (fileName && fileName !== keepFileName) {
+            deleteOverviewCoverImage(fileName);
+        }
+    }
+    sessionUploadedCovers.value = [];
+}
+
 function open(value: DesktopOverviewWidgetLayout): Promise<DesktopOverviewWidgetLayout> {
     widget.value = cloneWidget(value);
+    sessionUploadedCovers.value = [];
+    uploadingCoverImage.value = false;
+    isDraggingCover.value = false;
 
     if (DESKTOP_OVERVIEW_WIDGET_DEFINITIONS[widget.value.type]) {
         const defaultSettings = DESKTOP_OVERVIEW_WIDGET_DEFINITIONS[widget.value.type]?.defaultSettings ?? {};
         widget.value.settings = { ...defaultSettings, ...widget.value.settings };
     }
 
+    loadCoverPreview();
     showState.value = true;
 
     const promises: Promise<unknown>[] = [];
@@ -395,11 +613,14 @@ function confirm(): void {
         return;
     }
 
+    const finalCover = widget.value.settings['backgroundImage'];
+    cleanupUnusedSessionUploads(isString(finalCover) ? finalCover : undefined);
     resolveFunc?.(widget.value);
     showState.value = false;
 }
 
 function cancel(): void {
+    cleanupUnusedSessionUploads(undefined);
     rejectFunc?.();
     showState.value = false;
 }
@@ -408,3 +629,68 @@ defineExpose({
     open
 });
 </script>
+
+<style scoped>
+.overview-cover-preview {
+    position: relative;
+    height: 152px;
+    border-radius: 16px;
+    overflow: hidden;
+    border: 1px dashed rgba(var(--v-theme-primary), 0.35);
+    background: linear-gradient(145deg, rgba(var(--v-theme-primary), 0.12), rgba(var(--v-theme-primary), 0.04));
+    display: flex;
+    align-items: center;
+    padding: 16px 20px;
+    transition: border-color 150ms ease;
+}
+
+.overview-cover-preview--dragging {
+    border-color: rgb(var(--v-theme-primary));
+    border-width: 2px;
+}
+
+.overview-cover-preview--has-image {
+    border-style: solid;
+    border-color: rgba(255, 255, 255, 0.25);
+    color: #ffffff;
+}
+
+.overview-cover-preview--has-image.overview-cover-preview--dark-text {
+    color: #1c1c24;
+    border-color: rgba(28, 28, 36, 0.14);
+}
+
+.overview-cover-preview__overlay {
+    position: absolute;
+    inset: 0;
+    z-index: 0;
+    pointer-events: none;
+}
+
+.overview-cover-preview__content {
+    position: relative;
+    z-index: 1;
+}
+
+.overview-cover-preview__muted {
+    opacity: 0.78;
+}
+
+.overview-cover-preview__pill {
+    display: inline-block;
+    font-size: 0.75rem;
+    padding: 3px 10px;
+    border-radius: 999px;
+    background: rgba(var(--v-theme-surface), 0.75);
+}
+
+.overview-cover-preview--has-image:not(.overview-cover-preview--dark-text) .overview-cover-preview__pill {
+    background: rgba(15, 13, 28, 0.48);
+    color: #ffffff;
+}
+
+.overview-cover-preview--has-image.overview-cover-preview--dark-text .overview-cover-preview__pill {
+    background: rgba(255, 255, 255, 0.78);
+    color: #1c1c24;
+}
+</style>

@@ -168,6 +168,26 @@ func (s *ServiceUsingStorage) DeleteTransactionPicture(ctx core.Context, uid int
 	return s.container.DeleteTransactionPicture(ctx, s.getTransactionPicturePath(uid, pictureId, fileExtension))
 }
 
+// ExistsOverviewCover returns whether the overview cover exists in object storage
+func (s *ServiceUsingStorage) ExistsOverviewCover(ctx core.Context, uid int64, fileName string) (bool, error) {
+	return s.container.ExistsOverviewCover(ctx, s.getOverviewCoverPath(uid, fileName))
+}
+
+// ReadOverviewCover returns the overview cover from object storage
+func (s *ServiceUsingStorage) ReadOverviewCover(ctx core.Context, uid int64, fileName string) (storage.ObjectInStorage, bool, error) {
+	return s.container.ReadOverviewCover(ctx, s.getOverviewCoverPath(uid, fileName))
+}
+
+// SaveOverviewCover saves the overview cover into object storage
+func (s *ServiceUsingStorage) SaveOverviewCover(ctx core.Context, uid int64, fileName string, object storage.ObjectInStorage) error {
+	return s.container.SaveOverviewCover(ctx, s.getOverviewCoverPath(uid, fileName), object)
+}
+
+// DeleteOverviewCover deletes the overview cover from object storage
+func (s *ServiceUsingStorage) DeleteOverviewCover(ctx core.Context, uid int64, fileName string) error {
+	return s.container.DeleteOverviewCover(ctx, s.getOverviewCoverPath(uid, fileName))
+}
+
 func (s *ServiceUsingStorage) getUserAvatarPath(uid int64, fileExtension string) string {
 	return fmt.Sprintf("%d.%s", uid, fileExtension)
 }
@@ -178,4 +198,8 @@ func (s *ServiceUsingStorage) getTransactionPicturePath(uid int64, pictureId int
 
 func (s *ServiceUsingStorage) getUserCustomIconPath(uid int64, iconId int64) string {
 	return filepath.Join(utils.Int64ToString(uid), fmt.Sprintf("%d.%s", iconId, models.UserCustomIconFileExtension))
+}
+
+func (s *ServiceUsingStorage) getOverviewCoverPath(uid int64, fileName string) string {
+	return filepath.Join(utils.Int64ToString(uid), fileName)
 }

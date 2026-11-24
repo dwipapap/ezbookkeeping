@@ -5,6 +5,7 @@ import { TrendChartType } from '@/core/statistics.ts';
 import { TransactionCalendarHeatmapOutlierColorMode } from '@/core/chart.ts';
 import {
     type OverviewWidgetSettingValue,
+    type OverviewWidgetSettingItem,
     type OverviewWidgetSwitchSettingItem,
     type OverviewWidgetColorSettingItem,
     type OverviewWidgetTextboxSettingItem,
@@ -52,6 +53,51 @@ const WIDGET_BACKGROUND_COLOR_SETTINGS: OverviewWidgetColorSettingItem[] = [
         settingType: 'color',
         settingName: 'darkBackgroundColor',
         displayName: 'Dark Mode Background Color'
+    }
+];
+
+const hasCustomBackgroundImage = (settings?: Record<string, OverviewWidgetSettingValue>): boolean => {
+    const val = settings?.['backgroundImage'];
+    return typeof val === 'string' && val.trim().length > 0;
+};
+
+const WIDGET_BACKGROUND_IMAGE_SETTINGS: OverviewWidgetSettingItem[] = [
+    {
+        settingType: 'backgroundImage',
+        settingName: 'backgroundImage',
+        displayName: 'Custom Background Image'
+    },
+    {
+        settingType: 'slider',
+        settingName: 'backgroundImagePositionY',
+        displayName: 'Image Vertical Position',
+        min: 0,
+        max: 100,
+        step: 5,
+        defaultValue: 50,
+        unit: '%',
+        condition: hasCustomBackgroundImage
+    },
+    {
+        settingType: 'slider',
+        settingName: 'backgroundImageOverlayOpacity',
+        displayName: 'Image Overlay Darkness',
+        min: 0,
+        max: 70,
+        step: 5,
+        defaultValue: 35,
+        unit: '%',
+        condition: hasCustomBackgroundImage
+    },
+    {
+        settingType: 'customSelect',
+        settingName: 'backgroundImageTextColor',
+        displayName: 'Text Color on Image',
+        selectValues: [
+            { name: 'Light', value: 'light' },
+            { name: 'Dark', value: 'dark' }
+        ],
+        condition: hasCustomBackgroundImage
     }
 ];
 
@@ -179,7 +225,9 @@ export const DESKTOP_OVERVIEW_WIDGET_DEFINITIONS: PartialRecord<OverviewWidgetTy
     [OverviewWidgetType.CurrentMonthOverview]: {
         type: OverviewWidgetType.CurrentMonthOverview,
         name: 'This Month\'s Income and Expense Overview',
-        supportsSettings: [],
+        supportsSettings: [
+            ...WIDGET_BACKGROUND_IMAGE_SETTINGS
+        ],
         defaultSettings: {},
         defaultWidth: 4,
         defaultHeight: 3,
@@ -934,7 +982,8 @@ export const MOBILE_OVERVIEW_WIDGET_DEFINITIONS: PartialRecord<OverviewWidgetTyp
                     { name: 'Large', value: 3 }
                 ]
             },
-            ...WIDGET_BACKGROUND_COLOR_SETTINGS
+            ...WIDGET_BACKGROUND_COLOR_SETTINGS,
+            ...WIDGET_BACKGROUND_IMAGE_SETTINGS
         ],
         defaultSettings: {
             height: 3,

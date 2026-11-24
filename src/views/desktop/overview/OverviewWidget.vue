@@ -18,6 +18,10 @@
                                               v-else-if="widget.type === OverviewWidgetType.AccountUnreconciledTransactions" />
 
     <monthly-expense-overview-widget :loading="loading"
+                                     :background-image="widget.settings['backgroundImage'] as string"
+                                     :background-image-position-y="widget.settings['backgroundImagePositionY'] as number"
+                                     :background-image-overlay-opacity="widget.settings['backgroundImageOverlayOpacity'] as number"
+                                     :background-image-text-color="widget.settings['backgroundImageTextColor'] as string"
                                      @refresh="emit('refresh', true)"
                                      v-else-if="widget.type === OverviewWidgetType.CurrentMonthOverview" />
 

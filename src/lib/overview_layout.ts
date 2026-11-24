@@ -12,7 +12,8 @@ import {
     type MobileOverviewLayout,
     type MobileOverviewWidgetLayout,
     OverviewWidgetType,
-    OverviewWidgetDataRequirement
+    OverviewWidgetDataRequirement,
+    isValidOverviewCoverFileName
 } from '@/core/overview_layout.ts';
 
 import {
@@ -122,6 +123,10 @@ function normalizeOverviewWidgetSetting(setting: OverviewWidgetSettingItem, valu
         return isString(value) && AmountFilterType.parseTextualFilter(value) ? value : undefined;
     } else if (setting.settingType === 'textbox') {
         return isString(value) ? value : undefined;
+    } else if (setting.settingType === 'backgroundImage') {
+        return isValidOverviewCoverFileName(value) ? value.toLowerCase() : undefined;
+    } else if (setting.settingType === 'slider') {
+        return isInteger(value) && value >= setting.min && value <= setting.max ? value : undefined;
     } else {
         return undefined;
     }

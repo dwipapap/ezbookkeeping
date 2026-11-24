@@ -413,6 +413,10 @@ export function clearTransactionPictureCache(): Promise<void> {
 }
 
 export function clearAllUserCaches(): Promise<void> {
+    if (window.caches) {
+        window.caches.delete('ezbookkeeping-overview-cover-cache').catch(() => undefined);
+    }
+
     return clearFileCaches(
         FileCacheType.UserAvatars,
         FileCacheType.TransactionPictures,
