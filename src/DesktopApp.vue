@@ -44,7 +44,7 @@ import { isObject, isString } from '@/lib/common.ts';
 import { isProduction } from '@/lib/version.ts';
 import { initMapProvider } from '@/lib/map/index.ts';
 import { isUserLogined, isUserUnlocked } from '@/lib/userstate.ts';
-import { updateMapCacheExpiration, updateTransactionPictureCacheExpiration } from '@/lib/cache.ts';
+import { setupServiceWorkerAutoUpdate, updateMapCacheExpiration, updateTransactionPictureCacheExpiration } from '@/lib/cache.ts';
 import { getSystemTheme, setExpenseAndIncomeAmountColor } from '@/lib/ui/common.ts';
 import logger from '@/lib/logger.ts';
 
@@ -216,6 +216,7 @@ if (isUserLogined() && initialRoutePath !== '/verify_email' && initialRoutePath 
 }
 
 if (isProduction()) {
+    setupServiceWorkerAutoUpdate();
     register('./sw.js', {
         registrationOptions: {
             scope: './'

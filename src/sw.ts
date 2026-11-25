@@ -206,6 +206,11 @@ const DEFAULT_TRANSACTION_PICTURE_CACHE_MAX_AGE_MILLISECONDS: number = 30 * 24 *
 const DEFAULT_MAP_CACHE_MAX_ENTRIES: number = 1000;
 const DEFAULT_MAP_CACHE_MAX_AGE_MILLISECONDS: number = 30 * 24 * 60 * 60 * 1000;
 
+const DEFAULT_CODE_CACHE_MAX_ENTRIES: number = 100;
+const DEFAULT_CODE_CACHE_MAX_AGE_MILLISECONDS: number = 30 * 24 * 60 * 60 * 1000;
+
+const codeCacheExpirationPlugin = new DynamicExpirationPlugin(DEFAULT_CODE_CACHE_MAX_ENTRIES, DEFAULT_CODE_CACHE_MAX_AGE_MILLISECONDS);
+
 const mapCacheConfig: MapCacheConfig = {
     enabled: false,
     patterns: [],
@@ -278,6 +283,7 @@ registerRoute(
     /.*\/css\/.*\.css/,
     new CacheFirst({
         cacheName: SW_CODE_CACHE_NAME,
+        plugins: [codeCacheExpirationPlugin]
     })
 );
 
@@ -285,6 +291,7 @@ registerRoute(
     /.*\/js\/.*\.js/,
     new CacheFirst({
         cacheName: SW_CODE_CACHE_NAME,
+        plugins: [codeCacheExpirationPlugin]
     })
 );
 

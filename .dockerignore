@@ -1,0 +1,21 @@
+# Keep .git so build.sh and vite.config.ts can read the commit hash during Docker build
+.github
+.idea
+.vscode
+.roo
+.codex
+.planning
+design
+data
+storage
+log
+dist
+node_modules
+package
+ezbookkeeping
+*.log
+*.db
+*.db-shm
+*.db-wal
+.env
+**/.env

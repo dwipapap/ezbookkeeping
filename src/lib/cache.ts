@@ -22,6 +22,49 @@ import logger from './logger.ts';
 
 let controllerchangeListenerAdded: boolean = false;
 let transactionPictureControllerchangeListenerAdded: boolean = false;
+let swAutoUpdateInitialized: boolean = false;
+let swRefreshing: boolean = false;
+let lastSwUpdateCheckTime: number = 0;
+const SW_UPDATE_CHECK_MIN_INTERVAL_MS: number = 5 * 60 * 1000;
+
+export function setupServiceWorkerAutoUpdate(): void {
+    if (swAutoUpdateInitialized || typeof navigator === 'undefined' || typeof document === 'undefined' || !('serviceWorker' in navigator)) {
+        return;
+    }
+
+    swAutoUpdateInitialized = true;
+    const hadController = !!navigator.serviceWorker.controller;
+
+    navigator.serviceWorker.addEventListener('controllerchange', () => {
+        if (!hadController || swRefreshing) {
+            return;
+        }
+        swRefreshing = true;
+        window.location.reload();
+    });
+
+    document.addEventListener('visibilitychange', () => {
+        if (document.visibilityState !== 'visible') {
+            return;
+        }
+
+        const now = Date.now();
+        if (now - lastSwUpdateCheckTime < SW_UPDATE_CHECK_MIN_INTERVAL_MS) {
+            return;
+        }
+        lastSwUpdateCheckTime = now;
+
+        navigator.serviceWorker.getRegistration().then(registration => {
+            if (registration) {
+                return registration.update();
+            }
+
+            return undefined;
+        }).catch(error => {
+            logger.warn('failed to check service worker update', error);
+        });
+    });
+}
 
 function findFirstCacheName(prefix: string): Promise<string> {
     if (!prefix) {

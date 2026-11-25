@@ -285,7 +285,7 @@ export default defineConfig(() => {
                             },
                             {
                                 name:  'echarts',
-                                test: /[\\/]node_modules[\\/](echarts|zrender|tslib|resize-detector)[\\/]/i
+                                test: /[\\/]node_modules[\\/](echarts|vue-echarts|zrender|tslib|resize-detector)[\\/]/i
                             },
                             {
                                 name:  'ua-parser',
@@ -307,8 +307,6 @@ export default defineConfig(() => {
                                 name:  'vendor-desktop',
                                 test: id => {
                                     if (/[\\/]node_modules[\\/](vuetify|vue-router|vue3-perfect-scrollbar|perfect-scrollbar|vuedraggable|sortablejs|@mdi.*)[\\/]/i.test(id)) {
-                                        return true;
-                                    } else if (/[\\/]node_modules[\\/]vue-echarts[\\/]/i.test(id)) {
                                         return true;
                                     } else if (/plugin-vuetify:/i.test(id)) {
                                         return true;
@@ -341,14 +339,14 @@ export default defineConfig(() => {
                             }
                         ]
                     }
-                },
-                treeshake: false
+                }
             },
         },
         resolve: {
-            alias: {
-                '@': SRC_DIR,
-            },
+            alias: [
+                { find: '@', replacement: SRC_DIR },
+                { find: /^moment-timezone$/, replacement: resolve(__dirname, 'node_modules/moment-timezone/builds/moment-timezone-with-data-1970-2030.js') }
+            ],
         },
         server: {
             host: '0.0.0.0',

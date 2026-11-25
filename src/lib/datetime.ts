@@ -1,6 +1,5 @@
 import moment from 'moment-timezone';
 import { type unitOfTime } from 'moment/moment';
-import 'moment-timezone/moment-timezone-utils';
 
 import { type JalaaliDate, toJalaali } from 'jalaali-js';
 
@@ -79,6 +78,25 @@ interface DateTimeFormatResult {
 
 type DateTimeTokenFormatFunction = (d: MomentDateTime, options: DateTimeFormatOptions) => DateTimeFormatResult;
 
+const MOMENT_TZ_BASE60_CHARS = '0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWX';
+
+function encodeMomentTzBase60Int(value: number): string {
+    if (value === 0) {
+        return '0';
+    }
+
+    const sign = value < 0 ? '-' : '';
+    let remaining = Math.abs(Math.trunc(value));
+    let encoded = '';
+
+    while (remaining > 0) {
+        encoded = MOMENT_TZ_BASE60_CHARS[remaining % 60] + encoded;
+        remaining = Math.floor(remaining / 60);
+    }
+
+    return sign + encoded;
+}
+
 function getFixedTimezoneName(utcOffset: number): string {
     return `Fixed/Timezone${utcOffset}`;
 }
@@ -91,12 +109,7 @@ function getFixedTimezoneName(utcOffset: number): string {
             continue;
         }
 
-        moment.tz.add(moment.tz.pack({
-            name: timezoneName,
-            abbrs: [`FIX${utcOffset}`],
-            offsets: [-utcOffset],
-            untils: [0]
-        }));
+        moment.tz.add(`${timezoneName}|FIX${utcOffset}|${encodeMomentTzBase60Int(-utcOffset)}|0||`);
     }
 })();
 

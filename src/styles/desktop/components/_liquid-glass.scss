@@ -251,8 +251,6 @@
     border-radius: 20px;
     background: var(--ebk-glass-card-bg);
     box-shadow: var(--ebk-glass-card-shadow);
-    backdrop-filter: var(--ebk-glass-card-blur);
-    -webkit-backdrop-filter: var(--ebk-glass-card-blur);
 }
 
 .overview-widget {
@@ -260,8 +258,7 @@
     border-radius: 20px !important;
     background: var(--ebk-glass-card-bg) !important;
     box-shadow: var(--ebk-glass-card-shadow) !important;
-    backdrop-filter: var(--ebk-glass-card-blur);
-    -webkit-backdrop-filter: var(--ebk-glass-card-blur);
+    contain: layout style;
     transition: box-shadow 200ms ease, border-color 200ms ease;
 
     &:hover {

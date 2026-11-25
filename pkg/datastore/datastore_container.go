@@ -24,6 +24,42 @@ type DataStoreContainer struct {
 	UserDataStore *DataStore
 }
 
+// Close closes all unique database instances across all data stores in the container
+func (c *DataStoreContainer) Close() error {
+	if c == nil {
+		return nil
+	}
+
+	closed := make(map[Database]struct{})
+	var closeErrors []error
+
+	for _, store := range []*DataStore{c.UserStore, c.TokenStore, c.UserDataStore} {
+		if store == nil {
+			continue
+		}
+
+		for i := 0; i < store.Count(); i++ {
+			db := store.Get(i)
+
+			if db == nil {
+				continue
+			}
+
+			if _, exists := closed[db]; exists {
+				continue
+			}
+
+			closed[db] = struct{}{}
+
+			if err := db.Close(); err != nil {
+				closeErrors = append(closeErrors, err)
+			}
+		}
+	}
+
+	return errs.NewMultiErrorOrNil(closeErrors...)
+}
+
 // Initialize a data storage container singleton instance
 var (
 	Container = &DataStoreContainer{}
@@ -100,7 +136,13 @@ func initializeDatabase(dbConfig *settings.DatabaseConfig) (*XOrmDatabase, error
 	}
 
 	engineGroup.SetMaxIdleConns(int(dbConfig.MaxIdleConnection))
-	engineGroup.SetMaxOpenConns(int(dbConfig.MaxOpenConnection))
+
+	maxOpenConn := int(dbConfig.MaxOpenConnection)
+	if dbConfig.DatabaseType == settings.Sqlite3DbType && maxOpenConn == 0 {
+		maxOpenConn = 4
+	}
+	engineGroup.SetMaxOpenConns(maxOpenConn)
+
 	engineGroup.SetConnMaxLifetime(time.Duration(dbConfig.ConnectionMaxLifeTime) * time.Second)
 
 	return &XOrmDatabase{
@@ -144,5 +186,5 @@ func getPostgresConnectionString(dbConfig *settings.DatabaseConfig) (string, err
 }
 
 func getSqlite3ConnectionString(dbConfig *settings.DatabaseConfig) (string, error) {
-	return fmt.Sprintf("file:%s?cache=shared&mode=rwc", dbConfig.DatabasePath), nil
+	return fmt.Sprintf("file:%s?cache=shared&mode=rwc&_journal_mode=WAL&_busy_timeout=5000&_synchronous=NORMAL&_cache_size=-16000&_temp_store=MEMORY", dbConfig.DatabasePath), nil
 }

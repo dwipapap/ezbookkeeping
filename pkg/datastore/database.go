@@ -23,6 +23,9 @@ type Database interface {
 
 	// SyncStructs updates database structs by database models
 	SyncStructs(beans ...any) error
+
+	// Close closes the database instance
+	Close() error
 }
 
 // XOrmDatabase represents a database instance using xorm
@@ -91,4 +94,13 @@ func (db *XOrmDatabase) RollbackToSavePoint(sess DatabaseSession, savePointName 
 // SyncStructs updates database structs by database models
 func (db *XOrmDatabase) SyncStructs(beans ...any) error {
 	return db.engineGroup.Sync2(beans...)
+}
+
+// Close closes the database instance
+func (db *XOrmDatabase) Close() error {
+	if db.engineGroup == nil {
+		return nil
+	}
+
+	return db.engineGroup.Close()
 }

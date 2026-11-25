@@ -1,9 +1,16 @@
 package cmd
 
 import (
+	"context"
+	"errors"
 	"fmt"
+	"net"
 	"net/http"
+	"os"
+	"os/signal"
 	"path/filepath"
+	"strings"
+	"syscall"
 	"time"
 
 	"github.com/gin-contrib/cache"
@@ -18,6 +25,7 @@ import (
 	"github.com/mayswind/ezbookkeeping/pkg/auth/oauth2"
 	"github.com/mayswind/ezbookkeeping/pkg/core"
 	"github.com/mayswind/ezbookkeeping/pkg/cron"
+	"github.com/mayswind/ezbookkeeping/pkg/datastore"
 	"github.com/mayswind/ezbookkeeping/pkg/errs"
 	"github.com/mayswind/ezbookkeeping/pkg/log"
 	"github.com/mayswind/ezbookkeeping/pkg/mcp"
@@ -112,7 +120,12 @@ func startWebServer(c *core.CliContext) error {
 	}
 
 	if config.EnableGZip {
-		router.Use(gzip.Gzip(gzip.DefaultCompression))
+		router.Use(gzip.Gzip(
+			gzip.DefaultCompression,
+			gzip.WithExcludedExtensions([]string{
+				".png", ".gif", ".jpeg", ".jpg", ".webp", ".avif", ".ico", ".woff", ".woff2",
+			}),
+		))
 	}
 
 	if v, ok := binding.Validator.Engine().(*validator.Validate); ok {
@@ -133,6 +146,7 @@ func startWebServer(c *core.CliContext) error {
 
 	serverSettingsCacheStore := persistence.NewInMemoryStore(time.Minute)
 
+	router.Use(staticCacheControlMiddleware())
 	router.StaticFile("/", filepath.Join(config.StaticRootPath, "index.html"))
 	router.Static("/js", filepath.Join(config.StaticRootPath, "js"))
 	router.Static("/css", filepath.Join(config.StaticRootPath, "css"))
@@ -528,25 +542,140 @@ func startWebServer(c *core.CliContext) error {
 
 	listenAddr := fmt.Sprintf("%s:%d", config.HttpAddr, config.HttpPort)
 
+	var unixListener net.Listener
+
 	if config.Protocol == settings.SCHEME_SOCKET {
 		log.BootInfof(c, "[webserver.startWebServer] will run at socks:%s", config.UnixSocketPath)
-		err = router.RunUnix(config.UnixSocketPath)
+		unixListener, err = net.Listen("unix", config.UnixSocketPath)
+
+		if err != nil {
+			log.BootErrorf(c, "[webserver.startWebServer] cannot start, because %s", err)
+			return err
+		}
+
+		defer unixListener.Close()
+		defer os.Remove(config.UnixSocketPath)
 	} else if config.Protocol == settings.SCHEME_HTTP {
 		log.BootInfof(c, "[webserver.startWebServer] will run at http://%s", listenAddr)
-		err = router.Run(listenAddr)
 	} else if config.Protocol == settings.SCHEME_HTTPS {
 		log.BootInfof(c, "[webserver.startWebServer] will run at https://%s", listenAddr)
-		err = router.RunTLS(listenAddr, config.CertFile, config.CertKeyFile)
 	} else {
 		err = errs.ErrInvalidProtocol
-	}
-
-	if err != nil {
 		log.BootErrorf(c, "[webserver.startWebServer] cannot start, because %s", err)
 		return err
 	}
 
-	return nil
+	httpServer := &http.Server{
+		Addr:              listenAddr,
+		Handler:           router,
+		ReadHeaderTimeout: 15 * time.Second,
+		IdleTimeout:       120 * time.Second,
+	}
+
+	signalCtx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
+	defer stop()
+
+	serverErrCh := make(chan error, 1)
+
+	go func() {
+		var serveErr error
+
+		if config.Protocol == settings.SCHEME_SOCKET {
+			serveErr = httpServer.Serve(unixListener)
+		} else if config.Protocol == settings.SCHEME_HTTP {
+			serveErr = httpServer.ListenAndServe()
+		} else if config.Protocol == settings.SCHEME_HTTPS {
+			serveErr = httpServer.ListenAndServeTLS(config.CertFile, config.CertKeyFile)
+		}
+
+		if serveErr != nil && !errors.Is(serveErr, http.ErrServerClosed) {
+			serverErrCh <- serveErr
+		} else {
+			serverErrCh <- nil
+		}
+	}()
+
+	select {
+	case err = <-serverErrCh:
+		if err != nil {
+			log.BootErrorf(c, "[webserver.startWebServer] cannot start, because %s", err)
+			return err
+		}
+		return nil
+	case <-signalCtx.Done():
+		log.BootInfof(c, "[webserver.startWebServer] shutting down server...")
+		stop()
+
+		shutdownCtx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+		defer cancel()
+
+		if shutdownErr := httpServer.Shutdown(shutdownCtx); shutdownErr != nil {
+			log.BootErrorf(c, "[webserver.startWebServer] shutdown server failed, because %s", shutdownErr)
+			_ = httpServer.Close()
+		}
+
+		if serveErr := <-serverErrCh; serveErr != nil {
+			log.BootErrorf(c, "[webserver.startWebServer] server stopped with error, because %s", serveErr)
+		}
+
+		if closeErr := datastore.Container.Close(); closeErr != nil {
+			log.BootErrorf(c, "[webserver.startWebServer] close datastore failed, because %s", closeErr)
+		}
+
+		return nil
+	}
+}
+
+func staticCacheControlMiddleware() gin.HandlerFunc {
+	immutablePrefixes := []string{
+		"/js/",
+		"/css/",
+		"/fonts/",
+		"/mobile/js/",
+		"/mobile/css/",
+		"/mobile/fonts/",
+		"/desktop/js/",
+		"/desktop/css/",
+		"/desktop/fonts/",
+	}
+
+	noCacheExactPaths := map[string]struct{}{
+		"/":                     {},
+		"/index.html":           {},
+		"/mobile":               {},
+		"/mobile/":              {},
+		"/mobile.html":          {},
+		"/desktop":              {},
+		"/desktop/":             {},
+		"/desktop.html":         {},
+		"/sw.js":                {},
+		"/mobile/sw.js":         {},
+		"/desktop/sw.js":        {},
+		"/manifest.json":        {},
+		"/mobile/manifest.json": {},
+		"/desktop/manifest.json": {},
+	}
+
+	return func(ginCtx *gin.Context) {
+		if ginCtx.Request != nil && (ginCtx.Request.Method == http.MethodGet || ginCtx.Request.Method == http.MethodHead) {
+			if ginCtx.Writer.Header().Get("Cache-Control") == "" {
+				path := ginCtx.Request.URL.Path
+
+				if _, exists := noCacheExactPaths[path]; exists {
+					ginCtx.Header("Cache-Control", "no-cache, must-revalidate")
+				} else {
+					for _, prefix := range immutablePrefixes {
+						if strings.HasPrefix(path, prefix) {
+							ginCtx.Header("Cache-Control", "public, max-age=31536000, immutable")
+							break
+						}
+					}
+				}
+			}
+		}
+
+		ginCtx.Next()
+	}
 }
 
 func bindMiddleware(fn core.MiddlewareHandlerFunc, config *settings.Config) gin.HandlerFunc {

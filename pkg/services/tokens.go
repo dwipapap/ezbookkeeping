@@ -10,6 +10,7 @@ import (
 	"fmt"
 	"math"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/golang-jwt/jwt/v5"
@@ -30,11 +31,108 @@ const textualTokenPrefix = "ebk"
 const tokenSignatureSize = 12
 const tokenIdentityMinimumSize = 8 + 8 + 8 + tokenSignatureSize + 1
 const tokenMaxExpiredAtUnixTime = int64(253402300799) // 9999-12-31 23:59:59 UTC
+const tokenRecordCacheTTLSeconds = 30
+const tokenRecordCacheMaxEntries = 4096
+
+type tokenCacheKey struct {
+	uid             int64
+	userTokenId     int64
+	createdUnixTime int64
+}
+
+type cachedTokenRecord struct {
+	record       models.TokenRecord
+	cachedAtUnix int64
+}
+
+type tokenRecordCache struct {
+	mu      sync.RWMutex
+	entries map[tokenCacheKey]cachedTokenRecord
+}
+
+func (c *tokenRecordCache) get(key tokenCacheKey, now int64) (*models.TokenRecord, bool) {
+	c.mu.RLock()
+	defer c.mu.RUnlock()
+
+	if c.entries == nil {
+		return nil, false
+	}
+
+	entry, exists := c.entries[key]
+	if !exists || now-entry.cachedAtUnix >= tokenRecordCacheTTLSeconds {
+		return nil, false
+	}
+
+	recordCopy := entry.record
+	return &recordCopy, true
+}
+
+func (c *tokenRecordCache) set(key tokenCacheKey, record *models.TokenRecord, now int64) {
+	if record == nil {
+		return
+	}
+
+	c.mu.Lock()
+	defer c.mu.Unlock()
+
+	if c.entries == nil {
+		c.entries = make(map[tokenCacheKey]cachedTokenRecord)
+	} else if _, exists := c.entries[key]; !exists && len(c.entries) >= tokenRecordCacheMaxEntries {
+		for k, entry := range c.entries {
+			if now-entry.cachedAtUnix >= tokenRecordCacheTTLSeconds {
+				delete(c.entries, k)
+			}
+		}
+
+		if len(c.entries) >= tokenRecordCacheMaxEntries {
+			c.entries = make(map[tokenCacheKey]cachedTokenRecord)
+		}
+	}
+
+	c.entries[key] = cachedTokenRecord{
+		record:       *record,
+		cachedAtUnix: now,
+	}
+}
+
+func (c *tokenRecordCache) deleteKey(key tokenCacheKey) {
+	c.mu.Lock()
+	defer c.mu.Unlock()
+
+	if c.entries == nil {
+		return
+	}
+
+	delete(c.entries, key)
+}
+
+func (c *tokenRecordCache) deleteByUid(uid int64) {
+	c.mu.Lock()
+	defer c.mu.Unlock()
+
+	if c.entries == nil {
+		return
+	}
+
+	for k := range c.entries {
+		if k.uid == uid {
+			delete(c.entries, k)
+		}
+	}
+}
+
+func (c *tokenRecordCache) clear() {
+	c.mu.Lock()
+	defer c.mu.Unlock()
+
+	c.entries = nil
+}
 
 // TokenService represents user token service
 type TokenService struct {
 	ServiceUsingDB
 	ServiceUsingConfig
+	recordCache tokenRecordCache
 }
 
 // Initialize a user token service singleton instance
@@ -256,7 +354,7 @@ func (s *TokenService) UpdateTokenLastSeen(c core.Context, tokenRecord *models.T
 
 	tokenRecord.LastSeenUnixTime = time.Now().Unix()
 
-	return s.TokenDB(tokenRecord.Uid).DoTransaction(c, func(sess datastore.DatabaseSession) error {
+	err := s.TokenDB(tokenRecord.Uid).DoTransaction(c, func(sess datastore.DatabaseSession) error {
 		updatedRows, err := sess.Cols("last_seen_unix_time").Where("uid=? AND user_token_id=? AND created_unix_time=?", tokenRecord.Uid, tokenRecord.UserTokenId, tokenRecord.CreatedUnixTime).Update(tokenRecord)
 
 		if err != nil {
@@ -267,6 +365,14 @@ func (s *TokenService) UpdateTokenLastSeen(c core.Context, tokenRecord *models.T
 
 		return nil
 	})
+
+	s.recordCache.deleteKey(tokenCacheKey{
+		uid:             tokenRecord.Uid,
+		userTokenId:     tokenRecord.UserTokenId,
+		createdUnixTime: tokenRecord.CreatedUnixTime,
+	})
+
+	return err
 }
 
 // DeleteToken deletes given token from database
@@ -279,7 +385,7 @@ func (s *TokenService) DeleteToken(c core.Context, tokenRecord *models.TokenReco
 		return errs.ErrInvalidUserTokenId
 	}
 
-	return s.TokenDB(tokenRecord.Uid).DoTransaction(c, func(sess datastore.DatabaseSession) error {
+	err := s.TokenDB(tokenRecord.Uid).DoTransaction(c, func(sess datastore.DatabaseSession) error {
 		deletedRows, err := sess.Where("uid=? AND user_token_id=? AND created_unix_time=?", tokenRecord.Uid, tokenRecord.UserTokenId, tokenRecord.CreatedUnixTime).Delete(&models.TokenRecord{})
 
 		if err != nil {
@@ -290,6 +396,14 @@ func (s *TokenService) DeleteToken(c core.Context, tokenRecord *models.TokenReco
 
 		return nil
 	})
+
+	s.recordCache.deleteKey(tokenCacheKey{
+		uid:             tokenRecord.Uid,
+		userTokenId:     tokenRecord.UserTokenId,
+		createdUnixTime: tokenRecord.CreatedUnixTime,
+	})
+
+	return err
 }
 
 // DeleteTokens deletes given tokens from database
@@ -298,7 +412,7 @@ func (s *TokenService) DeleteTokens(c core.Context, uid int64, tokenRecords []*m
 		return errs.ErrUserIdInvalid
 	}
 
-	return s.TokenDB(uid).DoTransaction(c, func(sess datastore.DatabaseSession) error {
+	err := s.TokenDB(uid).DoTransaction(c, func(sess datastore.DatabaseSession) error {
 		for i := 0; i < len(tokenRecords); i++ {
 			tokenRecord := tokenRecords[i]
 			deletedRows, err := sess.Where("uid=? AND user_token_id=? AND created_unix_time=?", uid, tokenRecord.UserTokenId, tokenRecord.CreatedUnixTime).Delete(&models.TokenRecord{})
@@ -312,6 +426,20 @@ func (s *TokenService) DeleteTokens(c core.Context, uid int64, tokenRecords []*m
 
 		return nil
 	})
+
+	for i := 0; i < len(tokenRecords); i++ {
+		if tokenRecords[i] == nil {
+			continue
+		}
+
+		s.recordCache.deleteKey(tokenCacheKey{
+			uid:             uid,
+			userTokenId:     tokenRecords[i].UserTokenId,
+			createdUnixTime: tokenRecords[i].CreatedUnixTime,
+		})
+	}
+
+	return err
 }
 
 // DeleteTokenByClaims deletes given token from database
@@ -335,10 +463,14 @@ func (s *TokenService) DeleteTokensBeforeTime(c core.Context, uid int64, createT
 		return errs.ErrUserIdInvalid
 	}
 
-	return s.TokenDB(uid).DoTransaction(c, func(sess datastore.DatabaseSession) error {
+	err := s.TokenDB(uid).DoTransaction(c, func(sess datastore.DatabaseSession) error {
 		_, err := sess.Where("uid=? AND created_unix_time<?", uid, createTime).Delete(&models.TokenRecord{})
 		return err
 	})
+
+	s.recordCache.deleteByUid(uid)
+
+	return err
 }
 
 // DeleteTokensByType deletes specified type tokens
@@ -347,10 +479,14 @@ func (s *TokenService) DeleteTokensByType(c core.Context, uid int64, tokenType c
 		return errs.ErrUserIdInvalid
 	}
 
-	return s.TokenDB(uid).DoTransaction(c, func(sess datastore.DatabaseSession) error {
+	err := s.TokenDB(uid).DoTransaction(c, func(sess datastore.DatabaseSession) error {
 		_, err := sess.Where("uid=? AND token_type=?", uid, tokenType).Delete(&models.TokenRecord{})
 		return err
 	})
+
+	s.recordCache.deleteByUid(uid)
+
+	return err
 }
 
 // DeleteAllTokens deletes all tokens of given user
@@ -359,10 +495,14 @@ func (s *TokenService) DeleteAllTokens(c core.Context, uid int64) error {
 		return errs.ErrUserIdInvalid
 	}
 
-	return s.TokenDB(uid).DoTransaction(c, func(sess datastore.DatabaseSession) error {
+	err := s.TokenDB(uid).DoTransaction(c, func(sess datastore.DatabaseSession) error {
 		_, err := sess.Where("uid=?", uid).Delete(&models.TokenRecord{})
 		return err
 	})
+
+	s.recordCache.deleteByUid(uid)
+
+	return err
 }
 
 // DeleteAllExpiredTokens deletes all expired tokens
@@ -381,6 +521,8 @@ func (s *TokenService) DeleteAllExpiredTokens(c core.Context) error {
 			errors = append(errors, err)
 		}
 	}
+
+	s.recordCache.clear()
 
 	if totalCount > 0 {
 		log.Infof(c, "[tokens.DeleteAllExpiredTokens] %d expired tokens have been deleted", totalCount)
@@ -884,6 +1026,17 @@ func (s *TokenService) getTokenRecord(c core.Context, uid int64, userTokenId int
 		return nil, errs.ErrInvalidUserTokenId
 	}
 
+	cacheKey := tokenCacheKey{
+		uid:             uid,
+		userTokenId:     userTokenId,
+		createdUnixTime: createUnixTime,
+	}
+	now := time.Now().Unix()
+
+	if cachedRecord, ok := s.recordCache.get(cacheKey, now); ok {
+		return cachedRecord, nil
+	}
+
 	tokenRecord := &models.TokenRecord{}
 	has, err := s.TokenDB(uid).NewSession(c).Where("uid=? AND user_token_id=? AND created_unix_time=?", uid, userTokenId, createUnixTime).Limit(1).Get(tokenRecord)
 
@@ -894,6 +1047,8 @@ func (s *TokenService) getTokenRecord(c core.Context, uid int64, userTokenId int
 	if !has {
 		return nil, errs.ErrTokenRecordNotFound
 	}
+
+	s.recordCache.set(cacheKey, tokenRecord, time.Now().Unix())
 
 	return tokenRecord, nil
 }
@@ -907,10 +1062,18 @@ func (s *TokenService) createTokenRecord(c core.Context, tokenRecord *models.Tok
 		return errs.ErrInvalidUserTokenId
 	}
 
-	return s.TokenDB(tokenRecord.Uid).DoTransaction(c, func(sess datastore.DatabaseSession) error {
+	err := s.TokenDB(tokenRecord.Uid).DoTransaction(c, func(sess datastore.DatabaseSession) error {
 		_, err := sess.Insert(tokenRecord)
 		return err
 	})
+
+	s.recordCache.deleteKey(tokenCacheKey{
+		uid:             tokenRecord.Uid,
+		userTokenId:     tokenRecord.UserTokenId,
+		createdUnixTime: tokenRecord.CreatedUnixTime,
+	})
+
+	return err
 }
 
 func (s *TokenService) generateTokenSignature(record core.TokenRecord) []byte {

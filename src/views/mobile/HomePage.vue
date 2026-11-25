@@ -162,11 +162,14 @@ function init(): void {
     if (isUserLogined() && isUserUnlocked()) {
         loading.value = true;
 
+        transactionTemplatesStore.loadAllNormalTemplates({ force: false }).catch(error => {
+            logger.warn('failed to load normal transaction templates', error);
+        });
+
         const promises: Promise<unknown>[] = [
             getShareCacheImageBlob(),
             accountsStore.loadAllAccounts({ force: false }),
             transactionCategoriesStore.loadAllCategories({ force: false }),
-            transactionTemplatesStore.loadAllNormalTemplates({ force: false }),
             ...reloadOverviewData(false)
         ];
 

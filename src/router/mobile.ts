@@ -4,59 +4,19 @@ import { isUserLogined, isUserUnlocked } from '@/lib/userstate.ts';
 
 import HomePage from '@/views/mobile/HomePage.vue';
 import LoginPage from '@/views/mobile/LoginPage.vue';
-import SignUpPage from '@/views/mobile/SignupPage.vue';
-import UnlockPage from '@/views/mobile/UnlockPage.vue';
 
-import TransactionListPage from '@/views/mobile/transactions/ListPage.vue';
-import TransactionEditPage from '@/views/mobile/transactions/EditPage.vue';
-import TransactionAmountFilterPage from '@/views/mobile/transactions/AmountFilterPage.vue';
+type AsyncComponentLoader = () => Promise<{ default: unknown }>;
 
-import AccountListPage from '@/views/mobile/accounts/ListPage.vue';
-import AccountEditPage from '@/views/mobile/accounts/EditPage.vue';
-import AccountReconciliationStatementPage from '@/views/mobile/accounts/ReconciliationStatementPage.vue';
-import AccountMoveAllTransactionsPage from '@/views/mobile/accounts/MoveAllTransactionsPage.vue';
-
-import StatisticsTransactionPage from '@/views/mobile/statistics/TransactionPage.vue';
-import StatisticsSettingsPage from '@/views/mobile/statistics/SettingsPage.vue';
-
-import TextSizeSettingsPage from '@/views/mobile/settings/TextSizeSettingsPage.vue';
-import PreferencesSettingsPage from '@/views/mobile/settings/PreferencesSettingsPage.vue';
-import OverviewLayoutEditorPage from '@/views/mobile/overview/LayoutEditorPage.vue';
-import ChartColorSchemeSettingsPage from '@/views/mobile/settings/ChartColorSchemeSettingsPage.vue';
-import AccountCategoryDisplayOrderSettingsPage from '@/views/mobile/settings/AccountCategoryDisplayOrderSettingsPage.vue';
-import ApplicationCloudSyncSettingsPage from '@/views/mobile/settings/ApplicationCloudSyncSettingsPage.vue';
-import BrowserCacheSettingPage from '@/views/mobile/settings/BrowserCacheSettingPage.vue';
-import AccountFilterSettingsPage from '@/views/mobile/settings/AccountFilterSettingsPage.vue';
-import CategoryFilterSettingsPage from '@/views/mobile/settings/CategoryFilterSettingsPage.vue';
-import TransactionTagFilterSettingsPage from '@/views/mobile/settings/TransactionTagFilterSettingsPage.vue';
-
-import SettingsPage from '@/views/mobile/SettingsPage.vue';
-import ApplicationLockPage from '@/views/mobile/ApplicationLockPage.vue';
-import ExchangeRatesListPage from '@/views/mobile/exchangerates/ListPage.vue';
-import ExchangeRatesUpdatePage from '@/views/mobile/exchangerates/UpdatePage.vue';
-import AboutPage from '@/views/mobile/AboutPage.vue';
-
-import UserProfilePage from '@/views/mobile/users/UserProfilePage.vue';
-import DataManagementPage from '@/views/mobile/users/DataManagementPage.vue';
-import TwoFactorAuthPage from '@/views/mobile/users/TwoFactorAuthPage.vue';
-import SessionListPage from '@/views/mobile/users/SessionListPage.vue';
-
-import CategoryAllPage from '@/views/mobile/categories/AllPage.vue';
-import CategoryListPage from '@/views/mobile/categories/ListPage.vue';
-import CategoryEditPage from '@/views/mobile/categories/EditPage.vue';
-import CategoryPresetPage from '@/views/mobile/categories/PresetPage.vue';
-
-import TagListPage from '@/views/mobile/tags/ListPage.vue';
-import TagGroupListPage from '@/views/mobile/tags/GroupListPage.vue';
-
-import TemplateListPage from '@/views/mobile/templates/ListPage.vue';
-import ScheduledTransactionListPage from '@/views/mobile/schedules/ListPage.vue';
-
-function asyncResolve(component: unknown): (ctx: Router.RouteCallbackCtx) => void {
+function asyncResolve(componentOrLoader: unknown): (ctx: Router.RouteCallbackCtx) => void {
     return function({ resolve }: { resolve: ({ component }: { component: unknown }) => void }): void {
-        return resolve({
-            component: component
-        });
+        if (typeof componentOrLoader === 'function') {
+            (componentOrLoader as AsyncComponentLoader)().then(mod => {
+                resolve({ component: mod.default });
+            });
+            return;
+        }
+
+        resolve({ component: componentOrLoader });
     } as unknown as (ctx: Router.RouteCallbackCtx) => void;
 }
 
@@ -145,7 +105,7 @@ const routes: Router.RouteParameters[] = [
     },
     {
         path: '/signup',
-        async: asyncResolve(SignUpPage),
+        async: asyncResolve(() => import('@/views/mobile/SignupPage.vue')),
         beforeEnter: [checkNotLogin],
         options: {
             animate: false,
@@ -153,7 +113,7 @@ const routes: Router.RouteParameters[] = [
     },
     {
         path: '/unlock',
-        async: asyncResolve(UnlockPage),
+        async: asyncResolve(() => import('@/views/mobile/UnlockPage.vue')),
         beforeEnter: [checkLocked],
         options: {
             animate: false,
@@ -161,212 +121,212 @@ const routes: Router.RouteParameters[] = [
     },
     {
         path: '/transaction/list',
-        async: asyncResolve(TransactionListPage),
+        async: asyncResolve(() => import('@/views/mobile/transactions/ListPage.vue')),
         beforeEnter: [checkLogin]
     },
     {
         path: '/transaction/filter/amount',
-        async: asyncResolve(TransactionAmountFilterPage),
+        async: asyncResolve(() => import('@/views/mobile/transactions/AmountFilterPage.vue')),
         beforeEnter: [checkLogin]
     },
     {
         path: '/transaction/add',
-        async: asyncResolve(TransactionEditPage),
+        async: asyncResolve(() => import('@/views/mobile/transactions/EditPage.vue')),
         beforeEnter: [checkLogin]
     },
     {
         path: '/transaction/edit',
-        async: asyncResolve(TransactionEditPage),
+        async: asyncResolve(() => import('@/views/mobile/transactions/EditPage.vue')),
         beforeEnter: [checkLogin]
     },
     {
         path: '/transaction/detail',
-        async: asyncResolve(TransactionEditPage),
+        async: asyncResolve(() => import('@/views/mobile/transactions/EditPage.vue')),
         beforeEnter: [checkLogin]
     },
     {
         path: '/account/list',
-        async: asyncResolve(AccountListPage),
+        async: asyncResolve(() => import('@/views/mobile/accounts/ListPage.vue')),
         beforeEnter: [checkLogin]
     },
     {
         path: '/account/add',
-        async: asyncResolve(AccountEditPage),
+        async: asyncResolve(() => import('@/views/mobile/accounts/EditPage.vue')),
         beforeEnter: [checkLogin]
     },
     {
         path: '/account/edit',
-        async: asyncResolve(AccountEditPage),
+        async: asyncResolve(() => import('@/views/mobile/accounts/EditPage.vue')),
         beforeEnter: [checkLogin]
     },
     {
         path: '/account/reconciliation_statements',
-        async: asyncResolve(AccountReconciliationStatementPage),
+        async: asyncResolve(() => import('@/views/mobile/accounts/ReconciliationStatementPage.vue')),
         beforeEnter: [checkLogin]
     },
     {
         path: '/account/move_all_transactions',
-        async: asyncResolve(AccountMoveAllTransactionsPage),
+        async: asyncResolve(() => import('@/views/mobile/accounts/MoveAllTransactionsPage.vue')),
         beforeEnter: [checkLogin]
     },
     {
         path: '/statistic/transaction',
-        async: asyncResolve(StatisticsTransactionPage),
+        async: asyncResolve(() => import('@/views/mobile/statistics/TransactionPage.vue')),
         beforeEnter: [checkLogin]
     },
     {
         path: '/statistic/settings',
-        async: asyncResolve(StatisticsSettingsPage),
+        async: asyncResolve(() => import('@/views/mobile/statistics/SettingsPage.vue')),
         beforeEnter: [checkLogin]
     },
     {
         path: '/settings/textsize',
-        async: asyncResolve(TextSizeSettingsPage),
+        async: asyncResolve(() => import('@/views/mobile/settings/TextSizeSettingsPage.vue')),
         beforeEnter: [checkLogin]
     },
     {
         path: '/settings/filter/account',
-        async: asyncResolve(AccountFilterSettingsPage),
+        async: asyncResolve(() => import('@/views/mobile/settings/AccountFilterSettingsPage.vue')),
         beforeEnter: [checkLogin]
     },
     {
         path: '/settings/filter/category',
-        async: asyncResolve(CategoryFilterSettingsPage),
+        async: asyncResolve(() => import('@/views/mobile/settings/CategoryFilterSettingsPage.vue')),
         beforeEnter: [checkLogin]
     },
     {
         path: '/settings/filter/tag',
-        async: asyncResolve(TransactionTagFilterSettingsPage),
+        async: asyncResolve(() => import('@/views/mobile/settings/TransactionTagFilterSettingsPage.vue')),
         beforeEnter: [checkLogin]
     },
     {
         path: '/settings/preferences',
-        async: asyncResolve(PreferencesSettingsPage),
+        async: asyncResolve(() => import('@/views/mobile/settings/PreferencesSettingsPage.vue')),
         beforeEnter: [checkLogin]
     },
     {
         path: '/settings/overview_layout',
-        async: asyncResolve(OverviewLayoutEditorPage),
+        async: asyncResolve(() => import('@/views/mobile/overview/LayoutEditorPage.vue')),
         beforeEnter: [checkLogin]
     },
     {
         path: '/settings/chart_color_scheme',
-        async: asyncResolve(ChartColorSchemeSettingsPage),
+        async: asyncResolve(() => import('@/views/mobile/settings/ChartColorSchemeSettingsPage.vue')),
         beforeEnter: [checkLogin]
     },
     {
         path: '/settings/account_category_display_order',
-        async: asyncResolve(AccountCategoryDisplayOrderSettingsPage),
+        async: asyncResolve(() => import('@/views/mobile/settings/AccountCategoryDisplayOrderSettingsPage.vue')),
         beforeEnter: [checkLogin]
     },
     {
         path: '/settings/sync',
-        async: asyncResolve(ApplicationCloudSyncSettingsPage),
+        async: asyncResolve(() => import('@/views/mobile/settings/ApplicationCloudSyncSettingsPage.vue')),
         beforeEnter: [checkLogin]
     },
     {
         path: '/settings/browser_caches',
-        async: asyncResolve(BrowserCacheSettingPage),
+        async: asyncResolve(() => import('@/views/mobile/settings/BrowserCacheSettingPage.vue')),
         beforeEnter: [checkLogin]
     },
     {
         path: '/settings',
-        async: asyncResolve(SettingsPage),
+        async: asyncResolve(() => import('@/views/mobile/SettingsPage.vue')),
         beforeEnter: [checkLogin]
     },
     {
         path: '/app_lock',
-        async: asyncResolve(ApplicationLockPage),
+        async: asyncResolve(() => import('@/views/mobile/ApplicationLockPage.vue')),
         beforeEnter: [checkLogin]
     },
     {
         path: '/exchange_rates',
-        async: asyncResolve(ExchangeRatesListPage),
+        async: asyncResolve(() => import('@/views/mobile/exchangerates/ListPage.vue')),
         beforeEnter: [checkLogin]
     },
     {
         path: '/exchange_rates/update',
-        async: asyncResolve(ExchangeRatesUpdatePage),
+        async: asyncResolve(() => import('@/views/mobile/exchangerates/UpdatePage.vue')),
         beforeEnter: [checkLogin]
     },
     {
         path: '/about',
-        async: asyncResolve(AboutPage),
+        async: asyncResolve(() => import('@/views/mobile/AboutPage.vue')),
         beforeEnter: [checkLogin]
     },
     {
         path: '/user/profile',
-        async: asyncResolve(UserProfilePage),
+        async: asyncResolve(() => import('@/views/mobile/users/UserProfilePage.vue')),
         beforeEnter: [checkLogin]
     },
     {
         path: '/user/data/management',
-        async: asyncResolve(DataManagementPage),
+        async: asyncResolve(() => import('@/views/mobile/users/DataManagementPage.vue')),
         beforeEnter: [checkLogin]
     },
     {
         path: '/user/2fa',
-        async: asyncResolve(TwoFactorAuthPage),
+        async: asyncResolve(() => import('@/views/mobile/users/TwoFactorAuthPage.vue')),
         beforeEnter: [checkLogin]
     },
     {
         path: '/user/sessions',
-        async: asyncResolve(SessionListPage),
+        async: asyncResolve(() => import('@/views/mobile/users/SessionListPage.vue')),
         beforeEnter: [checkLogin]
     },
     {
         path: '/category/all',
-        async: asyncResolve(CategoryAllPage),
+        async: asyncResolve(() => import('@/views/mobile/categories/AllPage.vue')),
         beforeEnter: [checkLogin]
     },
     {
         path: '/category/list',
-        async: asyncResolve(CategoryListPage),
+        async: asyncResolve(() => import('@/views/mobile/categories/ListPage.vue')),
         beforeEnter: [checkLogin]
     },
     {
         path: '/category/add',
-        async: asyncResolve(CategoryEditPage),
+        async: asyncResolve(() => import('@/views/mobile/categories/EditPage.vue')),
         beforeEnter: [checkLogin]
     },
     {
         path: '/category/edit',
-        async: asyncResolve(CategoryEditPage),
+        async: asyncResolve(() => import('@/views/mobile/categories/EditPage.vue')),
         beforeEnter: [checkLogin]
     },
     {
         path: '/category/preset',
-        async: asyncResolve(CategoryPresetPage),
+        async: asyncResolve(() => import('@/views/mobile/categories/PresetPage.vue')),
         beforeEnter: [checkLogin]
     },
     {
         path: '/tag/list',
-        async: asyncResolve(TagListPage),
+        async: asyncResolve(() => import('@/views/mobile/tags/ListPage.vue')),
         beforeEnter: [checkLogin]
     },
     {
         path: '/tag/group/list',
-        async: asyncResolve(TagGroupListPage),
+        async: asyncResolve(() => import('@/views/mobile/tags/GroupListPage.vue')),
         beforeEnter: [checkLogin]
     },
     {
         path: '/template/list',
-        async: asyncResolve(TemplateListPage),
+        async: asyncResolve(() => import('@/views/mobile/templates/ListPage.vue')),
         beforeEnter: [checkLogin]
     },
     {
         path: '/schedule/list',
-        async: asyncResolve(ScheduledTransactionListPage),
+        async: asyncResolve(() => import('@/views/mobile/schedules/ListPage.vue')),
         beforeEnter: [checkLogin]
     },
     {
         path: '/template/add',
-        async: asyncResolve(TransactionEditPage),
+        async: asyncResolve(() => import('@/views/mobile/transactions/EditPage.vue')),
         beforeEnter: [checkLogin]
     },
     {
         path: '/template/edit',
-        async: asyncResolve(TransactionEditPage),
+        async: asyncResolve(() => import('@/views/mobile/transactions/EditPage.vue')),
         beforeEnter: [checkLogin]
     },
     {

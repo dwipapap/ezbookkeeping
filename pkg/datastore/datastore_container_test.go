@@ -65,3 +65,45 @@ func TestGetPostgreSQLConnectionString_UnixSocket(t *testing.T) {
 	assert.Nil(t, err)
 	assert.Equal(t, expectedValue, actualValue)
 }
+
+func TestGetSqlite3ConnectionString(t *testing.T) {
+	expectedValue := "file:/path/to/ezbookkeeping.db?cache=shared&mode=rwc&_journal_mode=WAL&_busy_timeout=5000&_synchronous=NORMAL&_cache_size=-16000&_temp_store=MEMORY"
+	actualValue, err := getSqlite3ConnectionString(&settings.DatabaseConfig{
+		DatabaseType: settings.Sqlite3DbType,
+		DatabasePath: "/path/to/ezbookkeeping.db",
+	})
+
+	assert.Nil(t, err)
+	assert.Equal(t, expectedValue, actualValue)
+}
+
+type closeTrackingDatabase struct {
+	Database
+	closeCount int
+}
+
+func (db *closeTrackingDatabase) Close() error {
+	db.closeCount++
+	return nil
+}
+
+func TestDataStoreContainer_CloseDeduplicatesDatabases(t *testing.T) {
+	sharedDB := &closeTrackingDatabase{}
+
+	userStore, err := NewDataStore(sharedDB)
+	assert.Nil(t, err)
+	tokenStore, err := NewDataStore(sharedDB)
+	assert.Nil(t, err)
+	userDataStore, err := NewDataStore(sharedDB)
+	assert.Nil(t, err)
+
+	container := &DataStoreContainer{
+		UserStore:     userStore,
+		TokenStore:    tokenStore,
+		UserDataStore: userDataStore,
+	}
+
+	err = container.Close()
+	assert.Nil(t, err)
+	assert.Equal(t, 1, sharedDB.closeCount)
+}

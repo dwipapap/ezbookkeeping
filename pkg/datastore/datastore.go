@@ -50,6 +50,27 @@ func (s *DataStore) SyncStructs(beans ...any) error {
 	return err
 }
 
+// Close closes all database instances in the data store
+func (s *DataStore) Close() error {
+	if s == nil {
+		return nil
+	}
+
+	var closeErrors []error
+
+	for i := 0; i < len(s.databases); i++ {
+		if s.databases[i] == nil {
+			continue
+		}
+
+		if err := s.databases[i].Close(); err != nil {
+			closeErrors = append(closeErrors, err)
+		}
+	}
+
+	return errs.NewMultiErrorOrNil(closeErrors...)
+}
+
 // NewDataStore returns a new data storage by a series of database
 func NewDataStore(databases ...Database) (*DataStore, error) {
 	if len(databases) < 1 {

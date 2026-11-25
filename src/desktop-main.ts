@@ -1,4 +1,4 @@
-import { createApp, ref } from 'vue';
+import { createApp, defineAsyncComponent, ref } from 'vue';
 import { createPinia } from 'pinia';
 import { type I18n, type Composer, createI18n } from 'vue-i18n';
 
@@ -51,30 +51,6 @@ import type { LocaleInstance } from 'vuetify/lib/framework.d.ts';
 
 import { aliases, mdi } from 'vuetify/iconsets/mdi-svg';
 import 'vuetify/styles';
-
-import * as echarts from 'echarts/core';
-import { CanvasRenderer } from 'echarts/renderers';
-import {
-    LineChart,
-    BarChart,
-    PieChart,
-    ScatterChart,
-    BoxplotChart,
-    CandlestickChart,
-    RadarChart,
-    TreemapChart,
-    SunburstChart,
-    HeatmapChart,
-    SankeyChart
-} from 'echarts/charts';
-import {
-    GridComponent,
-    CalendarComponent,
-    TooltipComponent,
-    LegendComponent,
-    VisualMapComponent
-} from 'echarts/components';
-import VChart from 'vue-echarts';
 
 import 'line-awesome/dist/line-awesome/css/line-awesome.css';
 
@@ -551,32 +527,50 @@ const vuetifyI18nTextKeyMap: Record<string, string> = {
     'colorPicker.ariaLabel.hexInput': 'HEX value'
 }
 
-echarts.use([
-    CanvasRenderer,
-    LineChart,
-    BarChart,
-    PieChart,
-    ScatterChart,
-    BoxplotChart,
-    CandlestickChart,
-    RadarChart,
-    TreemapChart,
-    SunburstChart,
-    HeatmapChart,
-    SankeyChart,
-    GridComponent,
-    CalendarComponent,
-    TooltipComponent,
-    LegendComponent,
-    VisualMapComponent
-]);
+let vChartPromise: Promise<typeof import('vue-echarts')['default']> | null = null;
+
+const AsyncVChart = defineAsyncComponent(() => {
+    if (!vChartPromise) {
+        vChartPromise = Promise.all([
+            import('echarts/core'),
+            import('echarts/renderers'),
+            import('echarts/charts'),
+            import('echarts/components'),
+            import('vue-echarts')
+        ]).then(([echarts, renderers, charts, components, vueEcharts]) => {
+            echarts.use([
+                renderers.CanvasRenderer,
+                charts.LineChart,
+                charts.BarChart,
+                charts.PieChart,
+                charts.ScatterChart,
+                charts.BoxplotChart,
+                charts.CandlestickChart,
+                charts.RadarChart,
+                charts.TreemapChart,
+                charts.SunburstChart,
+                charts.HeatmapChart,
+                charts.SankeyChart,
+                components.GridComponent,
+                components.CalendarComponent,
+                components.TooltipComponent,
+                components.LegendComponent,
+                components.VisualMapComponent
+            ]);
+
+            return vueEcharts.default;
+        });
+    }
+
+    return vChartPromise;
+});
 
 app.use(pinia);
 app.use(i18n);
 app.use(vuetify);
 app.use(router);
 
-app.component('VChart', VChart);
+app.component('VChart', AsyncVChart);
 app.component('VueDatePicker', VueDatePicker);
 app.component('DraggableList', draggable);
 

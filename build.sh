@@ -10,6 +10,7 @@ VERSION=""
 COMMIT_HASH=""
 BUILD_UNIXTIME="${BUILD_UNIXTIME}"
 BUILD_DATE="${BUILD_DATE}"
+BUILD_PIPELINE="${BUILD_PIPELINE}"
 PACKAGE_FILENAME=""
 DOCKER_TAG=""
 
@@ -142,8 +143,10 @@ set_build_parameters() {
 }
 
 build_backend() {
-    echo "Pulling backend dependencies..."
-    go get .
+    if [ "$BUILD_PIPELINE" != "1" ]; then
+        echo "Pulling backend dependencies..."
+        go get .
+    fi
 
     if [ "$NO_LINT" = "0" ]; then
         echo "Executing backend lint checking..."
@@ -157,13 +160,12 @@ build_backend() {
 
     if [ "$NO_TEST" = "0" ]; then
         echo "Executing backend unit testing..."
-        go clean -cache
 
         if [ -z "$SKIP_TESTS" ]; then
-            go test ./... -v
+            go test -count=1 ./... -v
         else
             echo "(Skip unit test \"$SKIP_TESTS\")"
-            go test ./... -v -skip "$SKIP_TESTS"
+            go test -count=1 ./... -v -skip "$SKIP_TESTS"
         fi
 
         if [ "$?" != "0" ]; then
@@ -185,15 +187,23 @@ build_backend() {
         backend_build_extra_arguments="$backend_build_extra_arguments -X main.BuildUnixTime=$BUILD_UNIXTIME"
     fi
 
+    go_build_flags=""
+
+    if [ "$BUILD_PIPELINE" != "1" ] && [ "$RELEASE" = "1" ]; then
+        go_build_flags="-a"
+    fi
+
     echo "Building backend binary file ($RELEASE_TYPE)..."
 
-    CGO_ENABLED=1 go build -a -v -trimpath -ldflags "-w -s $ld_static_link_flags $backend_build_extra_arguments" -o ezbookkeeping ezbookkeeping.go
+    CGO_ENABLED=1 go build $go_build_flags -v -trimpath -ldflags "-w -s $ld_static_link_flags $backend_build_extra_arguments" -o ezbookkeeping ezbookkeeping.go
     chmod +x ezbookkeeping
 }
 
 build_frontend() {
-    echo "Pulling frontend dependencies..."
-    npm install
+    if [ "$BUILD_PIPELINE" != "1" ] || [ ! -d node_modules ]; then
+        echo "Pulling frontend dependencies..."
+        npm install
+    fi
 
     if [ "$NO_LINT" = "0" ]; then
         echo "Executing frontend lint checking..."

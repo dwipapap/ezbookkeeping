@@ -28,7 +28,7 @@ import { isProduction } from '@/lib/version.ts';
 import { getTheme, isEnableSwipeBack, isEnableAnimate } from '@/lib/settings.ts';
 import { initMapProvider } from '@/lib/map/index.ts';
 import { isUserLogined, isUserUnlocked } from '@/lib/userstate.ts';
-import { updateMapCacheExpiration, updateTransactionPictureCacheExpiration } from '@/lib/cache.ts';
+import { setupServiceWorkerAutoUpdate, updateMapCacheExpiration, updateTransactionPictureCacheExpiration } from '@/lib/cache.ts';
 import { setExpenseAndIncomeAmountColor } from '@/lib/ui/common.ts';
 import { isiOSHomeScreenMode, isModalShowing, setAppFontSize, useI18nUIComponents } from '@/lib/ui/mobile.ts';
 import logger from '@/lib/logger.ts';
@@ -265,5 +265,9 @@ if (isUserLogined()) {
             logger.error('failed to refresh token', error);
         });
     }
+}
+
+if (isProduction()) {
+    setupServiceWorkerAutoUpdate();
 }
 </script>

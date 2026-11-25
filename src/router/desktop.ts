@@ -3,49 +3,7 @@ import { type NavigationGuardReturn, createRouter, createWebHashHistory } from '
 import { isUserLogined, isUserUnlocked } from '@/lib/userstate.ts';
 
 import LoginPage from '@/views/desktop/LoginPage.vue';
-import SignUpPage from '@/views/desktop/SignupPage.vue';
-import VerifyEmailPage from '@/views/desktop/VerifyEmailPage.vue';
-import ForgetPasswordPage from '@/views/desktop/ForgetPasswordPage.vue';
-import ResetPasswordPage from '@/views/desktop/ResetPasswordPage.vue';
-import OAuth2CallbackPage from '@/views/desktop/OAuth2CallbackPage.vue';
-import UnlockPage from '@/views/desktop/UnlockPage.vue';
-
 import HomePage from '@/views/desktop/HomePage.vue';
-
-import TransactionListPage from '@/views/desktop/transactions/ListPage.vue';
-
-import StatisticsTransactionPage from '@/views/desktop/statistics/TransactionPage.vue';
-
-import InsightsExplorerPage from '@/views/desktop/insights/ExplorerPage.vue';
-
-import AccountListPage from '@/views/desktop/accounts/ListPage.vue';
-
-import TransactionCategoryListPage from '@/views/desktop/categories/ListPage.vue';
-
-import TransactionTagListPage from '@/views/desktop/tags/ListPage.vue';
-
-import TransactionTemplateListPage from '@/views/desktop/templates/ListPage.vue';
-import ScheduledTransactionListPage from '@/views/desktop/schedules/ListPage.vue';
-
-import UserCustomIconListPage from '@/views/desktop/customicons/ListPage.vue';
-
-import ImportPresetsListPage from '@/views/desktop/presets/ImportPresetsListPage.vue';
-
-import OverviewLayoutEditorPage from '@/views/desktop/overview/LayoutEditorPage.vue';
-
-import SettingsPageLayout from '@/views/desktop/settings/SettingsPageLayout.vue';
-import UserBasicSettingPage from '@/views/desktop/users/UserBasicSettingPage.vue';
-import UserSecuritySettingPage from '@/views/desktop/users/UserSecuritySettingPage.vue';
-import TwoFactorAuthPage from '@/views/desktop/users/TwoFactorAuthPage.vue';
-import DataManagementPage from '@/views/desktop/users/DataManagementPage.vue';
-import PreferencesSettingsPage from '@/views/desktop/settings/PreferencesSettingsPage.vue';
-import ApplicationLockPage from '@/views/desktop/settings/ApplicationLockPage.vue';
-import StatisticsSettingPage from '@/views/desktop/settings/StatisticsSettingPage.vue';
-import ApplicationCloudSyncSettingsPage from '@/views/desktop/settings/ApplicationCloudSyncSettingsPage.vue';
-import BrowserCacheSettingPage from '@/views/desktop/settings/BrowserCacheSettingPage.vue';
-import DeveloperToolsPage from '@/views/desktop/settings/DeveloperToolsPage.vue';
-
-import ExchangeRatesListPage from '@/views/desktop/exchangerates/ListPage.vue';
 
 function checkLogin(): NavigationGuardReturn {
     if (!isUserLogined()) {
@@ -111,7 +69,7 @@ const router = createRouter({
         },
         {
             path: '/transaction/list',
-            component: TransactionListPage,
+            component: () => import('@/views/desktop/transactions/ListPage.vue'),
             beforeEnter: checkLogin,
             props: route => ({
                 initPageType: route.query['pageType'],
@@ -129,7 +87,7 @@ const router = createRouter({
         },
         {
             path: '/statistics/transaction',
-            component: StatisticsTransactionPage,
+            component: () => import('@/views/desktop/statistics/TransactionPage.vue'),
             beforeEnter: checkLogin,
             props: route => ({
                 initAnalysisType: route.query['analysisType'],
@@ -150,7 +108,7 @@ const router = createRouter({
         },
         {
             path: '/insights/explorer',
-            component: InsightsExplorerPage,
+            component: () => import('@/views/desktop/insights/ExplorerPage.vue'),
             beforeEnter: checkLogin,
             props: route => ({
                 initId: route.query['id'],
@@ -162,104 +120,104 @@ const router = createRouter({
         },
         {
             path: '/account/list',
-            component: AccountListPage,
+            component: () => import('@/views/desktop/accounts/ListPage.vue'),
             beforeEnter: checkLogin
         },
         {
             path: '/',
-            component: SettingsPageLayout,
+            component: () => import('@/views/desktop/settings/SettingsPageLayout.vue'),
             beforeEnter: checkLogin,
             children: [
                 {
                     path: '/category/list',
-                    component: TransactionCategoryListPage,
+                    component: () => import('@/views/desktop/categories/ListPage.vue'),
                     beforeEnter: checkLogin
                 },
                 {
                     path: '/tag/list',
-                    component: TransactionTagListPage,
+                    component: () => import('@/views/desktop/tags/ListPage.vue'),
                     beforeEnter: checkLogin
                 },
                 {
                     path: '/template/list',
-                    component: TransactionTemplateListPage,
+                    component: () => import('@/views/desktop/templates/ListPage.vue'),
                     beforeEnter: checkLogin
                 },
                 {
                     path: '/schedule/list',
-                    component: ScheduledTransactionListPage,
+                    component: () => import('@/views/desktop/schedules/ListPage.vue'),
                     beforeEnter: checkLogin
                 },
                 {
                     path: '/custom_icon/list',
-                    component: UserCustomIconListPage,
+                    component: () => import('@/views/desktop/customicons/ListPage.vue'),
                     beforeEnter: checkLogin
                 },
                 {
                     path: '/presets/import/list',
-                    component: ImportPresetsListPage,
+                    component: () => import('@/views/desktop/presets/ImportPresetsListPage.vue'),
                     beforeEnter: checkLogin
                 },
                 {
                     path: '/settings/user/basic',
-                    component: UserBasicSettingPage,
+                    component: () => import('@/views/desktop/users/UserBasicSettingPage.vue'),
                     beforeEnter: checkLogin
                 },
                 {
                     path: '/settings/user/security',
-                    component: UserSecuritySettingPage,
+                    component: () => import('@/views/desktop/users/UserSecuritySettingPage.vue'),
                     beforeEnter: checkLogin
                 },
                 {
                     path: '/settings/user/two_factor',
-                    component: TwoFactorAuthPage,
+                    component: () => import('@/views/desktop/users/TwoFactorAuthPage.vue'),
                     beforeEnter: checkLogin
                 },
                 {
                     path: '/settings/user/data_management',
-                    component: DataManagementPage,
+                    component: () => import('@/views/desktop/users/DataManagementPage.vue'),
                     beforeEnter: checkLogin
                 },
                 {
                     path: '/settings/preferences',
-                    component: PreferencesSettingsPage,
+                    component: () => import('@/views/desktop/settings/PreferencesSettingsPage.vue'),
                     beforeEnter: checkLogin
                 },
                 {
                     path: '/settings/application_lock',
-                    component: ApplicationLockPage,
+                    component: () => import('@/views/desktop/settings/ApplicationLockPage.vue'),
                     beforeEnter: checkLogin
                 },
                 {
                     path: '/settings/statistics',
-                    component: StatisticsSettingPage,
+                    component: () => import('@/views/desktop/settings/StatisticsSettingPage.vue'),
                     beforeEnter: checkLogin
                 },
                 {
                     path: '/settings/cloud_sync',
-                    component: ApplicationCloudSyncSettingsPage,
+                    component: () => import('@/views/desktop/settings/ApplicationCloudSyncSettingsPage.vue'),
                     beforeEnter: checkLogin
                 },
                 {
                     path: '/settings/browser_cache',
-                    component: BrowserCacheSettingPage,
+                    component: () => import('@/views/desktop/settings/BrowserCacheSettingPage.vue'),
                     beforeEnter: checkLogin
                 },
                 {
                     path: '/settings/developer_tools',
-                    component: DeveloperToolsPage,
+                    component: () => import('@/views/desktop/settings/DeveloperToolsPage.vue'),
                     beforeEnter: checkLogin
                 },
                 {
                     path: '/exchange_rate',
-                    component: ExchangeRatesListPage,
+                    component: () => import('@/views/desktop/exchangerates/ListPage.vue'),
                     beforeEnter: checkLogin
                 }
             ]
         },
         {
             path: '/overview/edit',
-            component: OverviewLayoutEditorPage,
+            component: () => import('@/views/desktop/overview/LayoutEditorPage.vue'),
             beforeEnter: checkLogin
         },
         {
@@ -269,12 +227,12 @@ const router = createRouter({
         },
         {
             path: '/signup',
-            component: SignUpPage,
+            component: () => import('@/views/desktop/SignupPage.vue'),
             beforeEnter: checkNotLogin
         },
         {
             path: '/verify_email',
-            component: VerifyEmailPage,
+            component: () => import('@/views/desktop/VerifyEmailPage.vue'),
             props: route => ({
                 email: route.query['email'],
                 token: route.query['token'],
@@ -283,19 +241,19 @@ const router = createRouter({
         },
         {
             path: '/forgetpassword',
-            component: ForgetPasswordPage,
+            component: () => import('@/views/desktop/ForgetPasswordPage.vue'),
             beforeEnter: checkNotLogin
         },
         {
             path: '/resetpassword',
-            component: ResetPasswordPage,
+            component: () => import('@/views/desktop/ResetPasswordPage.vue'),
             props: route => ({
                 token: route.query['token']
             })
         },
         {
             path: '/oauth2_callback',
-            component: OAuth2CallbackPage,
+            component: () => import('@/views/desktop/OAuth2CallbackPage.vue'),
             props: route => ({
                 token: route.query['token'],
                 provider: route.query['provider'],
@@ -307,10 +265,10 @@ const router = createRouter({
         },
         {
             path: '/unlock',
-            component: UnlockPage,
+            component: () => import('@/views/desktop/UnlockPage.vue'),
             beforeEnter: checkLocked
         }
     ],
-})
+});
 
 export default router;

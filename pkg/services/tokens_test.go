@@ -24,7 +24,8 @@ import (
 
 type tokenServiceTestDatabase struct {
 	datastore.Database
-	records map[[3]int64]models.TokenRecord
+	records  map[[3]int64]models.TokenRecord
+	getCount int
 }
 
 type tokenServiceTestSession struct {
@@ -55,6 +56,8 @@ func (s *tokenServiceTestSession) Limit(limit int, start ...int) datastore.Datab
 }
 
 func (s *tokenServiceTestSession) Get(beans ...any) (bool, error) {
+	s.database.getCount++
+
 	if len(beans) != 1 {
 		return false, nil
 	}
@@ -107,6 +110,25 @@ func (s *tokenServiceTestSession) Delete(beans ...any) (int64, error) {
 
 	if !ok || record == nil {
 		return 0, nil
+	}
+
+	if s.query == "uid=?" && len(s.args) == 1 {
+		uid, ok := s.args[0].(int64)
+
+		if !ok {
+			return 0, nil
+		}
+
+		deletedCount := int64(0)
+
+		for key := range s.database.records {
+			if key[0] == uid {
+				delete(s.database.records, key)
+				deletedCount++
+			}
+		}
+
+		return deletedCount, nil
 	}
 
 	key, ok := s.getTokenRecordKey()
@@ -1802,4 +1824,79 @@ func TestParseToken_ReturnsTokenRecord(t *testing.T) {
 	assert.Equal(t, claims.UserTokenId, actualClaims.UserTokenId)
 	assert.Equal(t, expectedValue, actualValue)
 	assert.Equal(t, "test-context", actualValue.GetContext())
+}
+
+func TestTokenService_GetTokenRecordCacheHit(t *testing.T) {
+	service, c, _, record := initializeScopedTokenServiceTest(t)
+	db := service.TokenDB(record.Uid).(*tokenServiceTestDatabase)
+
+	firstRecord, err := service.getTokenRecord(c, record.Uid, record.UserTokenId, record.CreatedUnixTime)
+	assert.Nil(t, err)
+	assert.Equal(t, record, firstRecord)
+	assert.Equal(t, 1, db.getCount)
+
+	// Mutating the returned pointer must not corrupt the cached value copy.
+	firstRecord.Secret = "mutated-secret"
+
+	secondRecord, err := service.getTokenRecord(c, record.Uid, record.UserTokenId, record.CreatedUnixTime)
+	assert.Nil(t, err)
+	assert.Equal(t, record, secondRecord)
+	assert.Equal(t, 1, db.getCount)
+}
+
+func TestTokenService_DeleteTokenInvalidatesCache(t *testing.T) {
+	service, c, _, record := initializeScopedTokenServiceTest(t)
+	db := service.TokenDB(record.Uid).(*tokenServiceTestDatabase)
+
+	cachedRecord, err := service.getTokenRecord(c, record.Uid, record.UserTokenId, record.CreatedUnixTime)
+	assert.Nil(t, err)
+	assert.Equal(t, record, cachedRecord)
+	assert.Equal(t, 1, db.getCount)
+
+	err = service.DeleteToken(c, record)
+	assert.Nil(t, err)
+
+	deletedRecord, err := service.getTokenRecord(c, record.Uid, record.UserTokenId, record.CreatedUnixTime)
+	assert.Nil(t, deletedRecord)
+	assert.Equal(t, errs.ErrTokenRecordNotFound, err)
+	assert.Equal(t, 2, db.getCount)
+}
+
+func TestTokenService_DeleteAllTokensInvalidatesCache(t *testing.T) {
+	service, c, _, firstRecord := initializeScopedTokenServiceTest(t)
+	db := service.TokenDB(firstRecord.Uid).(*tokenServiceTestDatabase)
+
+	_, _, secondRecord, err := service.createToken(c, &models.User{Uid: firstRecord.Uid}, core.USER_TOKEN_TYPE_API, "", "", time.Hour)
+	assert.Nil(t, err)
+
+	_, _, otherUserRecord, err := service.createToken(c, &models.User{Uid: 456}, core.USER_TOKEN_TYPE_API, "", "", time.Hour)
+	assert.Nil(t, err)
+
+	_, err = service.getTokenRecord(c, firstRecord.Uid, firstRecord.UserTokenId, firstRecord.CreatedUnixTime)
+	assert.Nil(t, err)
+	_, err = service.getTokenRecord(c, secondRecord.Uid, secondRecord.UserTokenId, secondRecord.CreatedUnixTime)
+	assert.Nil(t, err)
+	_, err = service.getTokenRecord(c, otherUserRecord.Uid, otherUserRecord.UserTokenId, otherUserRecord.CreatedUnixTime)
+	assert.Nil(t, err)
+	assert.Equal(t, 3, db.getCount)
+
+	err = service.DeleteAllTokens(c, firstRecord.Uid)
+	assert.Nil(t, err)
+
+	// Other user's cached entry should still hit cache without querying DB.
+	actualOtherRecord, err := service.getTokenRecord(c, otherUserRecord.Uid, otherUserRecord.UserTokenId, otherUserRecord.CreatedUnixTime)
+	assert.Nil(t, err)
+	assert.Equal(t, otherUserRecord, actualOtherRecord)
+	assert.Equal(t, 3, db.getCount)
+
+	// Deleted user's entries must miss cache and return not found from DB.
+	actualFirst, err := service.getTokenRecord(c, firstRecord.Uid, firstRecord.UserTokenId, firstRecord.CreatedUnixTime)
+	assert.Nil(t, actualFirst)
+	assert.Equal(t, errs.ErrTokenRecordNotFound, err)
+	assert.Equal(t, 4, db.getCount)
+
+	actualSecond, err := service.getTokenRecord(c, secondRecord.Uid, secondRecord.UserTokenId, secondRecord.CreatedUnixTime)
+	assert.Nil(t, actualSecond)
+	assert.Equal(t, errs.ErrTokenRecordNotFound, err)
+	assert.Equal(t, 5, db.getCount)
 }
