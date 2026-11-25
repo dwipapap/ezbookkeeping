@@ -57,10 +57,11 @@ jobs:
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
           build-args: |
+            BUILD_PIPELINE=1
+            CHECK_3RD_API=0
             BUILD_UNIXTIME=${{ steps.build_meta.outputs.unixtime }}
             BUILD_DATE=${{ steps.build_meta.outputs.date }}
             BUILD_NODE_OPTIONS=--max-old-space-size=4096
-            SKIP_TESTS=true
           cache-from: type=gha
           cache-to: type=gha,mode=max
 
