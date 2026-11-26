@@ -258,6 +258,18 @@ export const useSettingsStore = defineStore('settings', () => {
         updateUserApplicationCloudSettingValue('overviewTransactionTagFilterInHomePage', value);
     }
 
+    function setCategoryMonthlyBudgets(value: string): void {
+        updateApplicationSettingsValue('categoryMonthlyBudgets', value);
+        appSettings.value.categoryMonthlyBudgets = value;
+        updateUserApplicationCloudSettingValue('categoryMonthlyBudgets', value);
+    }
+
+    function setSavingsGoals(value: string): void {
+        updateApplicationSettingsValue('savingsGoals', value);
+        appSettings.value.savingsGoals = value;
+        updateUserApplicationCloudSettingValue('savingsGoals', value);
+    }
+
     // Transaction List Page
     function setItemsCountInTransactionListPage(value: number): void {
         updateApplicationSettingsValue('itemsCountInTransactionListPage', value);
@@ -669,6 +681,8 @@ export const useSettingsStore = defineStore('settings', () => {
         setOverviewAccountFilterInHomePage,
         setOverviewTransactionCategoryFilterInHomePage,
         setOverviewTransactionTagFilterInHomePage,
+        setCategoryMonthlyBudgets,
+        setSavingsGoals,
         // -- Transaction List Page
         setItemsCountInTransactionListPage,
         setShowTotalAmountInTransactionListPage,

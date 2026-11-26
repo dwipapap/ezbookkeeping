@@ -82,6 +82,48 @@ describe('desktop overview layout', () => {
         expect(getOverviewTransactionCategoryStatisticDateTypes(layout)).toEqual([DateRange.ThisMonth.type, DateRange.ThisYear.type]);
     });
 
+    test('includes this month category statistics when category budgets widget is present', () => {
+        const layout = normalizeDesktopOverviewLayout({
+            widgets: [
+                { id: 'budgets', type: OverviewWidgetType.CategoryBudgets, x: 0, y: 0, w: 4, h: 4 }
+            ]
+        });
+
+        expect(getOverviewTransactionCategoryStatisticDateTypes(layout)).toEqual([DateRange.ThisMonth.type]);
+        const requirements = getOverviewDataRequirements(layout, DESKTOP_OVERVIEW_WIDGET_DEFINITIONS);
+        expect(!!requirements[OverviewWidgetDataRequirement.TransactionCategoryStatistics]).toBe(true);
+    });
+
+    test('normalizes new QoL overview widgets on desktop and mobile', () => {
+        const desktopLayout = normalizeDesktopOverviewLayout({
+            widgets: [
+                { id: 'quick', type: OverviewWidgetType.QuickTemplates, x: 0, y: 0, w: 4, h: 3, settings: { itemCount: 8, instantLog: true } },
+                { id: 'bills', type: OverviewWidgetType.UpcomingBills, x: 4, y: 0, w: 4, h: 3, settings: { daysAhead: 30, itemCount: 6 } },
+                { id: 'budgets', type: OverviewWidgetType.CategoryBudgets, x: 8, y: 0, w: 4, h: 4, settings: { itemCount: 6, showDailySafeToSpend: false } },
+                { id: 'goals', type: OverviewWidgetType.SavingsGoals, x: 0, y: 4, w: 4, h: 4, settings: { itemCount: 3 } }
+            ]
+        });
+
+        expect(desktopLayout.widgets.find(w => w.id === 'quick')?.settings).toEqual({ itemCount: 8, instantLog: true });
+        expect(desktopLayout.widgets.find(w => w.id === 'bills')?.settings).toEqual({ daysAhead: 30, itemCount: 6 });
+        expect(desktopLayout.widgets.find(w => w.id === 'budgets')?.settings).toEqual({ itemCount: 6, showDailySafeToSpend: false });
+        expect(desktopLayout.widgets.find(w => w.id === 'goals')?.settings).toEqual({ itemCount: 3 });
+
+        const mobileLayout = normalizeMobileOverviewLayout({
+            widgets: [
+                { id: 'm-quick', type: OverviewWidgetType.QuickTemplates, settings: { showTitle: false, itemCount: 10, instantLog: true } },
+                { id: 'm-bills', type: OverviewWidgetType.UpcomingBills, settings: { daysAhead: 7, itemCount: 4 } },
+                { id: 'm-budgets', type: OverviewWidgetType.CategoryBudgets, settings: { showDailySafeToSpend: true } },
+                { id: 'm-goals', type: OverviewWidgetType.SavingsGoals, settings: { itemCount: 2 } }
+            ]
+        });
+
+        expect(mobileLayout.widgets[0]?.settings).toEqual({ showTitle: false, itemCount: 10, instantLog: true });
+        expect(mobileLayout.widgets[1]?.settings).toEqual({ showTitle: true, daysAhead: 7, itemCount: 4 });
+        expect(mobileLayout.widgets[2]?.settings).toEqual({ showTitle: true, itemCount: 5, showDailySafeToSpend: true });
+        expect(mobileLayout.widgets[3]?.settings).toEqual({ showTitle: true, itemCount: 2 });
+    });
+
     test('pushes colliding widget down and compacts it back up', () => {
         const widgets = [
             { id: 'active', type: OverviewWidgetType.CurrentMonthOverview, x: 0, y: 0, w: 4, h: 3, settings: {} },

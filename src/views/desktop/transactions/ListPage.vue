@@ -619,12 +619,30 @@
                                                 :text="tt('None')"
                                                 v-if="!transaction.tagIds || !transaction.tagIds.length"/>
                                     </td>
-                                    <td class="transaction-table-column-description text-truncate">
-                                        <v-icon class="transaction-picture-indicator" size="18" :icon="mdiImageOutline"
-                                                :aria-label="tt('Transaction Pictures')" role="img"
-                                                v-if="showPictureIndicatorInTransactionListPage && transaction.pictures?.length">
-                                        </v-icon>
-                                        {{ transaction.comment }}
+                                    <td class="transaction-table-column-description">
+                                        <div class="d-flex align-center justify-space-between">
+                                            <div class="transaction-description-text text-truncate">
+                                                <v-icon class="transaction-picture-indicator" size="18" :icon="mdiImageOutline"
+                                                        :aria-label="tt('Transaction Pictures')" role="img"
+                                                        v-if="showPictureIndicatorInTransactionListPage && transaction.pictures?.length">
+                                                </v-icon>
+                                                {{ transaction.comment }}
+                                            </div>
+                                            <v-btn class="transaction-log-again-btn ms-2 flex-shrink-0"
+                                                   density="compact"
+                                                   color="default"
+                                                   variant="text"
+                                                   size="small"
+                                                   :icon="true"
+                                                   :aria-label="tt('Log Again Today')"
+                                                   :loading="loggingAgainTransactionId === transaction.id"
+                                                   :disabled="loading || (!!loggingAgainTransactionId && loggingAgainTransactionId !== transaction.id)"
+                                                   v-if="transaction.type !== TransactionType.ModifyBalance"
+                                                   @click.stop="logAgainToday(transaction)">
+                                                <v-icon :icon="mdiRepeat" size="18" />
+                                                <v-tooltip activator="parent">{{ tt('Log Again Today') }}</v-tooltip>
+                                            </v-btn>
+                                        </div>
                                     </td>
                                 </tr>
                             </tbody>
@@ -717,6 +735,15 @@
     <transaction-tag-filter-settings-dialog type="transactionListCurrent"
                                             v-model:show="showFilterTagDialog"
                                             @settings:change="changeMultipleTagsFilter" />
+
+    <v-snackbar v-model="showUndoSnackbar" :timeout="5000" location="bottom">
+        {{ tt('Transaction logged for today') }}
+        <template #actions>
+            <v-btn variant="text" color="primary" :loading="undoingTransaction" @click="undoLoggedTransaction">
+                {{ tt('Undo') }}
+            </v-btn>
+        </template>
+    </v-snackbar>
 </template>
 
 <script setup lang="ts">
@@ -766,7 +793,7 @@ import { TransactionType, TransactionAmountType } from '@/core/transaction.ts';
 import { DEFAULT_PAGE_COUNTS } from '@/consts/page.ts';
 
 import type { TransactionCategory } from '@/models/transaction_category.ts';
-import { type Transaction, TransactionTagFilter } from '@/models/transaction.ts';
+import { Transaction, TransactionTagFilter } from '@/models/transaction.ts';
 import type { TransactionTemplate } from '@/models/transaction_template.ts';
 
 import {
@@ -779,6 +806,7 @@ import {
 } from '@/lib/common.ts';
 import {
     getCurrentUnixTime,
+    getTimezoneOffsetMinutes,
     parseDateTimeFromUnixTime,
     getDayFirstDateTimeBySpecifiedUnixTime,
     getYearMonthFirstUnixTime,
@@ -810,6 +838,7 @@ import {
     isTransactionFromAIImageRecognitionEnabled
 } from '@/lib/server_settings.ts';
 import { scrollToSelectedItem, startDownloadFile } from '@/lib/ui/common.ts';
+import { generateRandomUUID } from '@/lib/misc.ts';
 import logger from '@/lib/logger.ts';
 
 import {
@@ -829,7 +858,8 @@ import {
     mdiMagicStaff,
     mdiTablePlus,
     mdiTextBoxOutline,
-    mdiTextBoxEditOutline
+    mdiTextBoxEditOutline,
+    mdiRepeat
 } from '@mdi/js';
 
 interface TransactionListProps {
@@ -960,6 +990,10 @@ const showCustomMonthDialog = ref<boolean>(false);
 const showFilterAccountDialog = ref<boolean>(false);
 const showFilterCategoryDialog = ref<boolean>(false);
 const showFilterTagDialog = ref<boolean>(false);
+const loggingAgainTransactionId = ref<string | null>(null);
+const showUndoSnackbar = ref<boolean>(false);
+const lastCreatedTransaction = ref<Transaction | null>(null);
+const undoingTransaction = ref<boolean>(false);
 
 const isDarkMode = computed<boolean>(() => theme.global.name.value === ThemeType.Dark);
 const allNormalTransactionTemplates = computed<TransactionTemplate[]>(() => transactionTemplatesStore.allVisibleNormalTemplates);
@@ -1789,6 +1823,85 @@ function show(transaction: Transaction): void {
     });
 }
 
+function buildTodayTransactionCopy(transaction: Transaction): Transaction {
+    const now = getCurrentUnixTime();
+    const copy = Transaction.createNewTransaction(
+        transaction.type,
+        now,
+        '',
+        getTimezoneOffsetMinutes(now)
+    );
+
+    copy.setCategoryId(transaction.categoryId);
+    copy.sourceAccountId = transaction.sourceAccountId;
+    copy.destinationAccountId = transaction.type === TransactionType.Transfer ? transaction.destinationAccountId : '0';
+    copy.sourceAmount = transaction.sourceAmount;
+    copy.destinationAmount = transaction.type === TransactionType.Transfer ? transaction.destinationAmount : 0;
+    copy.hideAmount = transaction.hideAmount;
+    copy.tagIds = transaction.tagIds ? [...transaction.tagIds] : [];
+    copy.comment = transaction.comment;
+
+    return copy;
+}
+
+function logAgainToday(transaction: Transaction): void {
+    if (transaction.type === TransactionType.ModifyBalance || loggingAgainTransactionId.value || loading.value) {
+        return;
+    }
+
+    loggingAgainTransactionId.value = transaction.id;
+    const newTransaction = buildTodayTransactionCopy(transaction);
+
+    transactionsStore.saveTransaction({
+        transaction: newTransaction,
+        defaultCurrency: selectedAccountDefaultCurrency.value,
+        isEdit: false,
+        clientSessionId: generateRandomUUID()
+    }).then(createdTransaction => {
+        loggingAgainTransactionId.value = null;
+        reload(false, false);
+
+        showUndoSnackbar.value = false;
+        lastCreatedTransaction.value = createdTransaction;
+
+        nextTick(() => {
+            showUndoSnackbar.value = true;
+        });
+    }).catch(error => {
+        loggingAgainTransactionId.value = null;
+
+        if (!error.processed) {
+            desktopPageStore.addErrorToast(error);
+        }
+    });
+}
+
+function undoLoggedTransaction(): void {
+    if (!lastCreatedTransaction.value || undoingTransaction.value) {
+        return;
+    }
+
+    const targetTransaction = lastCreatedTransaction.value;
+    lastCreatedTransaction.value = null;
+    showUndoSnackbar.value = false;
+    undoingTransaction.value = true;
+
+    transactionsStore.deleteTransaction({
+        transaction: targetTransaction,
+        defaultCurrency: selectedAccountDefaultCurrency.value
+    }).then(() => {
+        undoingTransaction.value = false;
+        reload(false, false);
+        desktopPageStore.addToast('Transaction undone');
+    }).catch(error => {
+        undoingTransaction.value = false;
+
+        if (!error.processed) {
+            desktopPageStore.addErrorToast(error);
+        }
+    });
+}
+
 function scrollTimeMenuToSelectedItem(opened: boolean): void {
     if (opened) {
         scrollMenuToSelectedItem(timeFilterMenu.value);
@@ -1972,8 +2085,27 @@ init(props);
     }
 
     .transaction-table-column-description {
-        > .transaction-picture-indicator {
-            vertical-align: text-bottom;
+        .transaction-description-text {
+            min-width: 0;
+            flex: 1 1 auto;
+
+            > .transaction-picture-indicator {
+                vertical-align: text-bottom;
+            }
+        }
+    }
+
+    .transaction-table-row-data {
+        .transaction-log-again-btn {
+            opacity: 0.25;
+            transition: opacity 0.15s ease;
+        }
+
+        &:hover .transaction-log-again-btn,
+        .transaction-log-again-btn:hover,
+        .transaction-log-again-btn:focus-visible,
+        .transaction-log-again-btn.v-btn--loading {
+            opacity: 1;
         }
     }
 }

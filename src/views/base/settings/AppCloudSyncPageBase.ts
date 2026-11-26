@@ -44,7 +44,9 @@ export const ALL_APPLICATION_CLOUD_SETTINGS: CategorizedApplicationCloudSettingI
             { settingKey: 'timezoneUsedForStatisticsInHomePage', settingName: 'Timezone Used for Statistics', mobile: true, desktop: true },
             { settingKey: 'overviewAccountFilterInHomePage', settingName: 'Accounts Included in Overview Statistics', mobile: true, desktop: true },
             { settingKey: 'overviewTransactionCategoryFilterInHomePage', settingName: 'Transaction Categories Included in Overview Statistics', mobile: true, desktop: true },
-            { settingKey: 'overviewTransactionTagFilterInHomePage', settingName: 'Transaction Tags Included in Overview Statistics', mobile: true, desktop: true }
+            { settingKey: 'overviewTransactionTagFilterInHomePage', settingName: 'Transaction Tags Included in Overview Statistics', mobile: true, desktop: true },
+            { settingKey: 'categoryMonthlyBudgets', settingName: 'Monthly Category Budgets', mobile: true, desktop: true },
+            { settingKey: 'savingsGoals', settingName: 'Savings Goals', mobile: true, desktop: true }
         ]
     },
     {

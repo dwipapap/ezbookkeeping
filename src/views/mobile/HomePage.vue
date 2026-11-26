@@ -4,7 +4,7 @@
             <f7-nav-title :title="tt('global.app.title')"></f7-nav-title>
         </f7-navbar>
 
-        <overview-dashboard :layout="layout" :loading="loading" @navigate="onNavigate" />
+        <overview-dashboard :layout="layout" :loading="loading" @navigate="onNavigate" @refresh="reload()" />
 
         <f7-toolbar tabbar icons bottom class="main-tabbar liquid-glass-toolbar liquid-glass-tabbar">
             <f7-toolbar-pane class="liquid-glass-nav-pane">

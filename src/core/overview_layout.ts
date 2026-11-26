@@ -20,7 +20,11 @@ export enum OverviewWidgetType {
     RecentTransactions = 'recent-transactions',
     TransactionCalendar = 'transaction-calendar',
     TransactionCalendarHeatmap = 'transaction-calendar-heatmap',
-    AddTransactionButton = 'add-transaction-button'
+    AddTransactionButton = 'add-transaction-button',
+    QuickTemplates = 'quick-templates',
+    UpcomingBills = 'upcoming-bills',
+    CategoryBudgets = 'category-budgets',
+    SavingsGoals = 'savings-goals'
 }
 
 export enum OverviewWidgetDataRequirement {

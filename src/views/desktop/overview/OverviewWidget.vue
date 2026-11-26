@@ -81,6 +81,26 @@
                                          :outlier-top-count="widget.settings['outlierTopCount'] as number"
                                          :outlier-amount-threshold="widget.settings['outlierAmountThreshold'] as number"
                                          v-else-if="widget.type === OverviewWidgetType.TransactionCalendarHeatmap" />
+
+    <quick-templates-widget :loading="loading" :editing="editing" :title="widgetTitle"
+                            :item-count="widget.settings['itemCount'] as number"
+                            :instant-log="widget.settings['instantLog'] as boolean"
+                            @refresh="emit('refresh', false)"
+                            v-else-if="widget.type === OverviewWidgetType.QuickTemplates" />
+
+    <upcoming-bills-widget :loading="loading" :editing="editing" :title="widgetTitle"
+                           :days-ahead="widget.settings['daysAhead'] as number"
+                           :item-count="widget.settings['itemCount'] as number"
+                           v-else-if="widget.type === OverviewWidgetType.UpcomingBills" />
+
+    <category-budgets-widget :loading="loading" :editing="editing" :title="widgetTitle"
+                             :item-count="widget.settings['itemCount'] as number"
+                             :show-daily-safe-to-spend="widget.settings['showDailySafeToSpend'] as boolean"
+                             v-else-if="widget.type === OverviewWidgetType.CategoryBudgets" />
+
+    <savings-goals-widget :loading="loading" :editing="editing" :title="widgetTitle"
+                          :item-count="widget.settings['itemCount'] as number"
+                          v-else-if="widget.type === OverviewWidgetType.SavingsGoals" />
 </template>
 
 <script setup lang="ts">
@@ -99,6 +119,10 @@ import ExpenseCategoryRankingWidget from './widgets/ExpenseCategoryRankingWidget
 import RecentTransactionsWidget from './widgets/RecentTransactionsWidget.vue';
 import TransactionCalendarWidget from './widgets/TransactionCalendarWidget.vue';
 import TransactionCalendarHeatmapWidget from './widgets/TransactionCalendarHeatmapWidget.vue';
+import QuickTemplatesWidget from './widgets/QuickTemplatesWidget.vue';
+import UpcomingBillsWidget from './widgets/UpcomingBillsWidget.vue';
+import CategoryBudgetsWidget from './widgets/CategoryBudgetsWidget.vue';
+import SavingsGoalsWidget from './widgets/SavingsGoalsWidget.vue';
 
 import { TransactionType } from '@/core/transaction.ts';
 import { TransactionCalendarHeatmapOutlierColorMode } from '@/core/chart.ts';

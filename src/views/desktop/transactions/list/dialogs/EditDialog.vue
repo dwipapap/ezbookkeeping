@@ -362,7 +362,29 @@
                                         :label="transactionDescriptionTitle"
                                         :placeholder="tt('Your transaction description (optional)')"
                                         v-model="transaction.comment"
+                                        @focus="onCommentFocus"
+                                        @blur="onCommentBlur"
+                                        @input="onCommentInput"
+                                        @keydown.escape="dismissCommentSuggestions"
                                     />
+                                    <v-card variant="outlined" class="mt-1 transaction-comment-suggestions" v-if="showCommentSuggestions">
+                                        <v-list density="compact" class="py-0">
+                                            <v-list-item
+                                                class="cursor-pointer"
+                                                :key="`${suggestion.type}-${suggestion.comment}`"
+                                                v-for="suggestion in commentSuggestions"
+                                                @mousedown.prevent
+                                                @click="applyCommentSuggestion(suggestion)"
+                                            >
+                                                <v-list-item-title class="text-body-2 font-weight-medium">
+                                                    {{ suggestion.comment }}
+                                                </v-list-item-title>
+                                                <v-list-item-subtitle class="text-caption" v-if="getSuggestionMetaText(suggestion)">
+                                                    {{ getSuggestionMetaText(suggestion) }}
+                                                </v-list-item-subtitle>
+                                            </v-list-item>
+                                        </v-list>
+                                    </v-card>
                                 </v-col>
                             </v-row>
                         </v-form>
@@ -429,6 +451,13 @@
                     <v-progress-circular indeterminate size="22" class="ms-2" v-if="submitting"></v-progress-circular>
                 </v-btn>
                 <v-spacer/>
+                <v-btn color="secondary" variant="tonal" class="me-2"
+                       :prepend-icon="mdiRepeat"
+                       :disabled="loading || submitting || recognizing"
+                       v-if="type === TransactionEditPageType.Transaction && (mode === TransactionEditPageMode.View || mode === TransactionEditPageMode.Edit) && transaction.type !== TransactionType.ModifyBalance"
+                       @click="logAgainToday">
+                    {{ tt('Log Again Today') }}
+                </v-btn>
                 <v-tooltip :disabled="!inputIsEmpty" :text="inputEmptyProblemMessage ? tt(inputEmptyProblemMessage) : ''">
                     <template v-slot:activator="{ props }">
                         <div v-bind="props" class="d-inline-block">
@@ -500,6 +529,14 @@
     </v-dialog>
 
     <confirm-dialog ref="confirmDialog"/>
+    <v-snackbar v-model="showUndoSnackbar" :timeout="5000" location="bottom">
+        {{ tt('Logged again today') }}
+        <template #actions>
+            <v-btn color="primary" variant="text" :disabled="undoingLogAgain" @click="undoLogAgainToday">
+                {{ tt('Undo') }}
+            </v-btn>
+        </template>
+    </v-snackbar>
     <input ref="pictureInput" type="file" style="display: none" :accept="SUPPORTED_IMAGE_EXTENSIONS" @change="onUploadPicture($event)" />
 </template>
 
@@ -535,6 +572,7 @@ import { KnownFileType } from '@/core/file.ts';
 
 import { KnownErrorCode } from '@/consts/api.ts';
 import { SUPPORTED_IMAGE_EXTENSIONS } from '@/consts/file.ts';
+import { TRANSACTION_MAX_AMOUNT } from '@/consts/transaction.ts';
 
 import { TransactionTemplate } from '@/models/transaction_template.ts';
 import type { TransactionPictureInfoBasicResponse } from '@/models/transaction_picture_info.ts';
@@ -547,10 +585,17 @@ import {
 } from '@/lib/datetime.ts';
 import { generateRandomUUID } from '@/lib/misc.ts';
 import {
+    categoryTypeToTransactionType,
     getTransactionPrimaryCategoryName,
     getTransactionSecondaryCategoryName
 } from '@/lib/category.ts';
 import { type SetTransactionOptions } from '@/lib/transaction.ts';
+import {
+    type TransactionSuggestion,
+    collectSuggestionsFromTransactions,
+    recordTransactionSuggestion,
+    searchTransactionSuggestions
+} from '@/lib/transaction_suggestions.ts';
 import {
     isTransactionFromAITextRecognitionEnabled,
     isTransactionPicturesEnabled,
@@ -574,7 +619,8 @@ import {
     mdiMenuDown,
     mdiImagePlusOutline,
     mdiTrashCanOutline,
-    mdiFullscreen
+    mdiFullscreen,
+    mdiRepeat
 } from '@mdi/js';
 
 export interface TransactionEditOptions extends SetTransactionOptions {
@@ -682,8 +728,41 @@ const noTransactionDraft = ref<boolean>(false);
 const geoMenuState = ref<boolean>(false);
 const removingPictureId = ref<string>('');
 const pastedText = ref<string>('');
+const commentInputFocused = ref<boolean>(false);
+const suggestionDismissed = ref<boolean>(false);
+const suggestionRevision = ref<number>(0);
+const showUndoSnackbar = ref<boolean>(false);
+const lastLoggedTransaction = ref<Transaction | null>(null);
+const undoingLogAgain = ref<boolean>(false);
+let suppressNextCommentSuggestionReset = false;
 
 const initOptions = ref<TransactionEditOptions | undefined>(undefined);
+
+const allCommentSuggestionCandidates = computed<TransactionSuggestion[]>(() => {
+    void suggestionRevision.value;
+    return collectSuggestionsFromTransactions(transactionsStore.transactions);
+});
+
+const commentSuggestions = computed<TransactionSuggestion[]>(() => {
+    if (props.type !== TransactionEditPageType.Transaction ||
+        mode.value === TransactionEditPageMode.View ||
+        transaction.value.type === TransactionType.ModifyBalance) {
+        return [];
+    }
+
+    if (!transaction.value.comment || !transaction.value.comment.trim()) {
+        return [];
+    }
+
+    return searchTransactionSuggestions(transaction.value.comment, allCommentSuggestionCandidates.value, {
+        type: transaction.value.type,
+        limit: 5
+    });
+});
+
+const showCommentSuggestions = computed<boolean>(() => {
+    return commentInputFocused.value && !suggestionDismissed.value && commentSuggestions.value.length > 0;
+});
 
 const sourceAmountColor = computed<string | undefined>(() => {
     if (transaction.value.type === TransactionType.Expense) {
@@ -733,6 +812,8 @@ function open(options: TransactionEditOptions): Promise<TransactionEditResponse 
     setGeoLocationByClickMap.value = false;
     originalTransactionEditable.value = false;
     noTransactionDraft.value = options.noTransactionDraft || false;
+    commentInputFocused.value = false;
+    suggestionDismissed.value = false;
 
     initOptions.value = options;
 
@@ -905,9 +986,22 @@ function save(afterAction: AfterSaveAction): void {
                 defaultCurrency: defaultCurrency.value,
                 isEdit: mode.value === TransactionEditPageMode.Edit,
                 clientSessionId: clientSessionId.value
-            }).then(() => {
+            }).then((savedTransaction) => {
                 submitting.value = false;
                 submitted.value = true;
+
+                if (savedTransaction.type !== TransactionType.ModifyBalance) {
+                    recordTransactionSuggestion({
+                        comment: savedTransaction.comment,
+                        type: savedTransaction.type,
+                        categoryId: savedTransaction.categoryId,
+                        sourceAccountId: savedTransaction.sourceAccountId,
+                        destinationAccountId: savedTransaction.destinationAccountId,
+                        tagIds: savedTransaction.tagIds,
+                        lastAmount: String(savedTransaction.sourceAmount)
+                    });
+                    suggestionRevision.value++;
+                }
 
                 if (mode.value === TransactionEditPageMode.Add && !noTransactionDraft.value && !addByTemplateId.value && !duplicateFromId.value) {
                     transactionsStore.clearTransactionDraft();
@@ -1075,6 +1169,195 @@ function edit(): void {
     }
 
     mode.value = TransactionEditPageMode.Edit;
+}
+
+function onCommentFocus(): void {
+    commentInputFocused.value = true;
+}
+
+function onCommentBlur(): void {
+    setTimeout(() => {
+        commentInputFocused.value = false;
+    }, 150);
+}
+
+function onCommentInput(): void {
+    suggestionDismissed.value = false;
+}
+
+function dismissCommentSuggestions(): void {
+    suggestionDismissed.value = true;
+}
+
+function getSuggestionMetaText(suggestion: TransactionSuggestion): string {
+    const parts: string[] = [];
+    const category = transactionCategoriesStore.allTransactionCategoriesMap[suggestion.categoryId];
+
+    if (category && !category.hidden && categoryTypeToTransactionType(category.type) === transaction.value.type) {
+        parts.push(category.name);
+    }
+
+    const sourceAccount = accountsStore.allAccountsMap[suggestion.sourceAccountId];
+    const sourceName = sourceAccount && !sourceAccount.hidden ? sourceAccount.name : '';
+
+    if (transaction.value.type === TransactionType.Transfer) {
+        const destinationAccount = accountsStore.allAccountsMap[suggestion.destinationAccountId];
+        const destName = destinationAccount && !destinationAccount.hidden ? destinationAccount.name : '';
+
+        if (sourceName && destName) {
+            parts.push(`${sourceName} → ${destName}`);
+        } else if (sourceName || destName) {
+            parts.push(sourceName || destName);
+        }
+    } else if (sourceName) {
+        parts.push(sourceName);
+    }
+
+    return parts.join(' · ');
+}
+
+function applyCommentSuggestion(suggestion: TransactionSuggestion): void {
+    suppressNextCommentSuggestionReset = true;
+    suggestionDismissed.value = true;
+    transaction.value.comment = suggestion.comment;
+
+    const category = transactionCategoriesStore.allTransactionCategoriesMap[suggestion.categoryId];
+
+    if (category && !category.hidden && categoryTypeToTransactionType(category.type) === transaction.value.type) {
+        transaction.value.setCategoryId(category.id);
+    }
+
+    const sourceAccount = accountsStore.allAccountsMap[suggestion.sourceAccountId];
+
+    if (sourceAccount && !sourceAccount.hidden) {
+        transaction.value.sourceAccountId = sourceAccount.id;
+    }
+
+    if (transaction.value.type === TransactionType.Transfer) {
+        const destinationAccount = accountsStore.allAccountsMap[suggestion.destinationAccountId];
+
+        if (destinationAccount && !destinationAccount.hidden) {
+            transaction.value.destinationAccountId = destinationAccount.id;
+        }
+    }
+
+    if (suggestion.tagIds && suggestion.tagIds.length > 0) {
+        transaction.value.tagIds = suggestion.tagIds.filter(tagId => {
+            const tag = transactionTagsStore.allTransactionTagsMap[tagId];
+            return !!tag && !tag.hidden;
+        });
+    } else {
+        transaction.value.tagIds = [];
+    }
+
+    if (transaction.value.sourceAmount === 0 && suggestion.lastAmount) {
+        const parsedAmount = parseInt(suggestion.lastAmount, 10);
+
+        if (Number.isFinite(parsedAmount) && parsedAmount > 0 && parsedAmount <= TRANSACTION_MAX_AMOUNT) {
+            transaction.value.sourceAmount = parsedAmount;
+        }
+    }
+}
+
+function logAgainToday(): void {
+    if (props.type !== TransactionEditPageType.Transaction ||
+        (mode.value !== TransactionEditPageMode.View && mode.value !== TransactionEditPageMode.Edit) ||
+        transaction.value.type === TransactionType.ModifyBalance ||
+        loading.value || submitting.value || recognizing.value) {
+        return;
+    }
+
+    const now = getCurrentUnixTime();
+    const clonedTransaction = Transaction.of(transaction.value);
+    clonedTransaction.id = '';
+    clonedTransaction.timeSequenceId = '';
+    clonedTransaction.time = now;
+    clonedTransaction.timeZone = settingsStore.appSettings.timeZone;
+    clonedTransaction.utcOffset = getTimezoneOffsetMinutes(now, clonedTransaction.timeZone);
+    clonedTransaction.tagIds = [...(transaction.value.tagIds || [])];
+    clonedTransaction.editable = true;
+    clonedTransaction.clearPictures();
+
+    submitting.value = true;
+
+    transactionsStore.saveTransaction({
+        transaction: clonedTransaction,
+        defaultCurrency: defaultCurrency.value,
+        isEdit: false,
+        clientSessionId: generateRandomUUID()
+    }).then(savedTransaction => {
+        submitting.value = false;
+
+        recordTransactionSuggestion({
+            comment: savedTransaction.comment,
+            type: savedTransaction.type,
+            categoryId: savedTransaction.categoryId,
+            sourceAccountId: savedTransaction.sourceAccountId,
+            destinationAccountId: savedTransaction.destinationAccountId,
+            tagIds: savedTransaction.tagIds,
+            lastAmount: String(savedTransaction.sourceAmount)
+        });
+        suggestionRevision.value++;
+
+        lastLoggedTransaction.value = savedTransaction;
+        showUndoSnackbar.value = true;
+
+        if (resolveFunc) {
+            resolveFunc();
+        }
+
+        showState.value = false;
+    }).catch(error => {
+        submitting.value = false;
+
+        if (error.error && (error.error.errorCode === KnownErrorCode.TransactionCannotCreateInThisTime || error.error.errorCode === KnownErrorCode.TransactionCannotModifyInThisTime)) {
+            confirmDialog.value?.open('You have set this time range to prevent editing transactions. Would you like to change the editable transaction range to All?').then(() => {
+                submitting.value = true;
+
+                userStore.updateUserTransactionEditScope({
+                    transactionEditScope: TransactionEditScopeType.All.type
+                }).then(() => {
+                    submitting.value = false;
+
+                    desktopPageStore.addToast('Your editable transaction range has been set to All');
+                }).catch(error => {
+                    submitting.value = false;
+
+                    if (!error.processed) {
+                        desktopPageStore.addErrorToast(error);
+                    }
+                });
+            });
+        } else if (!error.processed) {
+            desktopPageStore.addErrorToast(error);
+        }
+    });
+}
+
+function undoLogAgainToday(): void {
+    const target = lastLoggedTransaction.value;
+
+    if (!target || undoingLogAgain.value) {
+        return;
+    }
+
+    undoingLogAgain.value = true;
+
+    transactionsStore.deleteTransaction({
+        transaction: target,
+        defaultCurrency: defaultCurrency.value
+    }).then(() => {
+        undoingLogAgain.value = false;
+        showUndoSnackbar.value = false;
+        lastLoggedTransaction.value = null;
+        desktopPageStore.addToast('Transaction undone');
+    }).catch(error => {
+        undoingLogAgain.value = false;
+
+        if (!error.processed) {
+            desktopPageStore.addErrorToast(error);
+        }
+    });
 }
 
 function remove(): void {
@@ -1291,6 +1574,19 @@ watch(activeTab, (newValue) => {
             map.value?.initMapView();
         });
     }
+});
+
+watch(() => transaction.value.comment, () => {
+    if (suppressNextCommentSuggestionReset) {
+        suppressNextCommentSuggestionReset = false;
+        return;
+    }
+
+    suggestionDismissed.value = false;
+});
+
+watch(() => transaction.value.type, () => {
+    suggestionDismissed.value = false;
 });
 
 defineExpose({

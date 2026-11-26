@@ -438,8 +438,39 @@
                 :placeholder="mode !== TransactionEditPageMode.View ? tt('Your transaction description (optional)') : ''"
                 v-textarea-auto-size
                 v-model:value="transaction.comment"
+                @focus="onCommentFocus"
+                @blur="onCommentBlur"
+                @input="onCommentInput"
             ></f7-list-input>
+
+            <f7-list-item
+                link="#" no-chevron
+                class="transaction-comment-suggestion-item"
+                :key="`${suggestion.type}-${suggestion.comment}`"
+                v-for="suggestion in commentSuggestions"
+                v-show="showCommentSuggestions"
+                @pointerdown.prevent
+                @click="applyCommentSuggestion(suggestion)"
+            >
+                <template #title>
+                    <span class="transaction-comment-suggestion-title">{{ suggestion.comment }}</span>
+                </template>
+                <template #footer v-if="getSuggestionMetaText(suggestion)">
+                    <span class="transaction-comment-suggestion-meta">{{ getSuggestionMetaText(suggestion) }}</span>
+                </template>
+            </f7-list-item>
         </f7-list>
+
+        <f7-block class="margin-vertical-half"
+                  v-if="!loading && pageTypeAndMode?.type === TransactionEditPageType.Transaction && mode === TransactionEditPageMode.View && transaction.type !== TransactionType.ModifyBalance">
+            <f7-button tonal round large
+                       class="log-again-today-button"
+                       :class="{ 'disabled': submitting || recognizing }"
+                       @click="logAgainToday">
+                <f7-icon f7="arrow_2_circlepath" size="18"></f7-icon>
+                <span>{{ tt('Log Again Today') }}</span>
+            </f7-button>
+        </f7-block>
 
         <f7-actions close-by-outside-click close-on-escape :opened="showGeoLocationActionSheet" @actions:closed="showGeoLocationActionSheet = false">
             <f7-actions-group>
@@ -522,7 +553,8 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, useTemplateRef } from 'vue';
+import { ref, computed, watch, useTemplateRef } from 'vue';
+import { f7ready } from 'framework7-vue';
 import type { PhotoBrowser, Router } from 'framework7/types';
 
 import { useI18n } from '@/locales/helpers.ts';
@@ -566,11 +598,22 @@ import { parseBigDecimal } from '@/lib/numeral.ts';
 import {
     getTimezoneOffset,
     getTimezoneOffsetMinutes,
-    parseDateTimeFromUnixTimeWithTimezoneOffset
+    parseDateTimeFromUnixTimeWithTimezoneOffset,
+    getCurrentUnixTime
 } from '@/lib/datetime.ts';
 import { generateRandomUUID } from '@/lib/misc.ts';
-import { getTransactionPrimaryCategoryName, getTransactionSecondaryCategoryName } from '@/lib/category.ts';
+import {
+    categoryTypeToTransactionType,
+    getTransactionPrimaryCategoryName,
+    getTransactionSecondaryCategoryName
+} from '@/lib/category.ts';
 import { type SetTransactionOptions } from '@/lib/transaction.ts';
+import {
+    type TransactionSuggestion,
+    collectSuggestionsFromTransactions,
+    recordTransactionSuggestion,
+    searchTransactionSuggestions
+} from '@/lib/transaction_suggestions.ts';
 import {
     isTransactionFromAITextRecognitionEnabled,
     isTransactionPicturesEnabled,
@@ -694,6 +737,36 @@ const showTransactionPictures = ref<boolean>(pageTypeAndMode?.type === Transacti
     && (pageTypeAndMode?.mode === TransactionEditPageMode.Add || pageTypeAndMode?.mode === TransactionEditPageMode.Edit)
     && settingsStore.appSettings.alwaysShowTransactionPicturesInMobileTransactionEditPage);
 const showAITextRecognitionSheet = ref<boolean>(false);
+const commentInputFocused = ref<boolean>(false);
+const suggestionDismissed = ref<boolean>(false);
+const suggestionRevision = ref<number>(0);
+let suppressNextCommentSuggestionReset = false;
+
+const allCommentSuggestionCandidates = computed<TransactionSuggestion[]>(() => {
+    void suggestionRevision.value;
+    return collectSuggestionsFromTransactions(transactionsStore.transactions);
+});
+
+const commentSuggestions = computed<TransactionSuggestion[]>(() => {
+    if (pageTypeAndMode?.type !== TransactionEditPageType.Transaction ||
+        mode.value === TransactionEditPageMode.View ||
+        transaction.value.type === TransactionType.ModifyBalance) {
+        return [];
+    }
+
+    if (!transaction.value.comment || !transaction.value.comment.trim()) {
+        return [];
+    }
+
+    return searchTransactionSuggestions(transaction.value.comment, allCommentSuggestionCandidates.value, {
+        type: transaction.value.type,
+        limit: 5
+    });
+});
+
+const showCommentSuggestions = computed<boolean>(() => {
+    return commentInputFocused.value && !suggestionDismissed.value && commentSuggestions.value.length > 0;
+});
 
 const quickSaveButtonStyleType = computed<number>(() => settingsStore.appSettings.quickSaveButtonStyleInMobileTransactionListPage);
 const quickSaveButtonFloatingPosition = computed<string>(() => {
@@ -1115,10 +1188,23 @@ function save(afterAction: AfterSaveAction): void {
                 defaultCurrency: defaultCurrency.value,
                 isEdit: mode.value === TransactionEditPageMode.Edit,
                 clientSessionId: clientSessionId.value
-            }).then(() => {
+            }).then((savedTransaction) => {
                 submitting.value = false;
                 submitted.value = true;
                 hideLoading();
+
+                if (savedTransaction.type !== TransactionType.ModifyBalance) {
+                    recordTransactionSuggestion({
+                        comment: savedTransaction.comment,
+                        type: savedTransaction.type,
+                        categoryId: savedTransaction.categoryId,
+                        sourceAccountId: savedTransaction.sourceAccountId,
+                        destinationAccountId: savedTransaction.destinationAccountId,
+                        tagIds: savedTransaction.tagIds,
+                        lastAmount: String(savedTransaction.sourceAmount)
+                    });
+                    suggestionRevision.value++;
+                }
 
                 if (mode.value === TransactionEditPageMode.Add && query['noTransactionDraft'] !== 'true' && !addByTemplateId.value && !duplicateFromId.value) {
                     transactionsStore.clearTransactionDraft();
@@ -1432,6 +1518,211 @@ function duplicate(withTime?: boolean, withGeoLocation?: boolean): void {
     props.f7router.navigate(`/transaction/add?id=${transaction.value.id}&type=${transaction.value.type}&withTime=${withTime ?? false}&withGeoLocation=${withGeoLocation ?? false}`);
 }
 
+function onCommentFocus(): void {
+    commentInputFocused.value = true;
+}
+
+function onCommentBlur(): void {
+    setTimeout(() => {
+        commentInputFocused.value = false;
+    }, 150);
+}
+
+function onCommentInput(): void {
+    suggestionDismissed.value = false;
+}
+
+function getSuggestionMetaText(suggestion: TransactionSuggestion): string {
+    const parts: string[] = [];
+    const category = transactionCategoriesStore.allTransactionCategoriesMap[suggestion.categoryId];
+
+    if (category && !category.hidden && categoryTypeToTransactionType(category.type) === transaction.value.type) {
+        parts.push(category.name);
+    }
+
+    const sourceAccount = accountsStore.allAccountsMap[suggestion.sourceAccountId];
+    const sourceName = sourceAccount && !sourceAccount.hidden ? sourceAccount.name : '';
+
+    if (transaction.value.type === TransactionType.Transfer) {
+        const destinationAccount = accountsStore.allAccountsMap[suggestion.destinationAccountId];
+        const destName = destinationAccount && !destinationAccount.hidden ? destinationAccount.name : '';
+
+        if (sourceName && destName) {
+            parts.push(`${sourceName} → ${destName}`);
+        } else if (sourceName || destName) {
+            parts.push(sourceName || destName);
+        }
+    } else if (sourceName) {
+        parts.push(sourceName);
+    }
+
+    return parts.join(' · ');
+}
+
+function applyCommentSuggestion(suggestion: TransactionSuggestion): void {
+    suppressNextCommentSuggestionReset = true;
+    suggestionDismissed.value = true;
+    transaction.value.comment = suggestion.comment;
+
+    const category = transactionCategoriesStore.allTransactionCategoriesMap[suggestion.categoryId];
+
+    if (category && !category.hidden && categoryTypeToTransactionType(category.type) === transaction.value.type) {
+        transaction.value.setCategoryId(category.id);
+    }
+
+    const sourceAccount = accountsStore.allAccountsMap[suggestion.sourceAccountId];
+
+    if (sourceAccount && !sourceAccount.hidden) {
+        transaction.value.sourceAccountId = sourceAccount.id;
+    }
+
+    if (transaction.value.type === TransactionType.Transfer) {
+        const destinationAccount = accountsStore.allAccountsMap[suggestion.destinationAccountId];
+
+        if (destinationAccount && !destinationAccount.hidden) {
+            transaction.value.destinationAccountId = destinationAccount.id;
+        }
+    }
+
+    if (suggestion.tagIds && suggestion.tagIds.length > 0) {
+        transaction.value.tagIds = suggestion.tagIds.filter(tagId => {
+            const tag = transactionTagsStore.allTransactionTagsMap[tagId];
+            return !!tag && !tag.hidden;
+        });
+    } else {
+        transaction.value.tagIds = [];
+    }
+
+    if (transaction.value.sourceAmount === 0 && suggestion.lastAmount) {
+        const parsedAmount = parseInt(suggestion.lastAmount, 10);
+
+        if (Number.isFinite(parsedAmount) && parsedAmount > 0 && parsedAmount <= TRANSACTION_MAX_AMOUNT) {
+            transaction.value.sourceAmount = parsedAmount;
+        }
+    }
+}
+
+function logAgainToday(): void {
+    if (pageTypeAndMode?.type !== TransactionEditPageType.Transaction ||
+        mode.value !== TransactionEditPageMode.View ||
+        transaction.value.type === TransactionType.ModifyBalance ||
+        loading.value || submitting.value || recognizing.value) {
+        return;
+    }
+
+    const now = getCurrentUnixTime();
+    const clonedTransaction = Transaction.of(transaction.value);
+    clonedTransaction.id = '';
+    clonedTransaction.timeSequenceId = '';
+    clonedTransaction.time = now;
+    clonedTransaction.timeZone = settingsStore.appSettings.timeZone;
+    clonedTransaction.utcOffset = getTimezoneOffsetMinutes(now, clonedTransaction.timeZone);
+    clonedTransaction.tagIds = [...(transaction.value.tagIds || [])];
+    clonedTransaction.editable = true;
+    clonedTransaction.clearPictures();
+
+    submitting.value = true;
+    showLoading(() => submitting.value);
+
+    transactionsStore.saveTransaction({
+        transaction: clonedTransaction,
+        defaultCurrency: defaultCurrency.value,
+        isEdit: false,
+        clientSessionId: generateRandomUUID()
+    }).then(savedTransaction => {
+        submitting.value = false;
+        hideLoading();
+
+        recordTransactionSuggestion({
+            comment: savedTransaction.comment,
+            type: savedTransaction.type,
+            categoryId: savedTransaction.categoryId,
+            sourceAccountId: savedTransaction.sourceAccountId,
+            destinationAccountId: savedTransaction.destinationAccountId,
+            tagIds: savedTransaction.tagIds,
+            lastAmount: String(savedTransaction.sourceAmount)
+        });
+        suggestionRevision.value++;
+
+        let undone = false;
+
+        f7ready((f7Instance) => {
+            const toast = f7Instance.toast.create({
+                text: tt('Logged again today'),
+                closeTimeout: 5000,
+                closeButton: true,
+                closeButtonText: tt('Undo'),
+                on: {
+                    closeButtonClick: () => {
+                        if (undone) {
+                            return;
+                        }
+
+                        undone = true;
+                        toast.close();
+
+                        transactionsStore.deleteTransaction({
+                            transaction: savedTransaction,
+                            defaultCurrency: defaultCurrency.value
+                        }).then(() => {
+                            showToast('Transaction undone');
+                        }).catch(error => {
+                            if (!error.processed) {
+                                showToast(error.message || error);
+                            }
+                        });
+                    }
+                }
+            });
+
+            toast.open();
+        });
+
+        props.f7router.back();
+    }).catch(error => {
+        submitting.value = false;
+        hideLoading();
+
+        if (error.error && (error.error.errorCode === KnownErrorCode.TransactionCannotCreateInThisTime || error.error.errorCode === KnownErrorCode.TransactionCannotModifyInThisTime)) {
+            showConfirm('You have set this time range to prevent editing transactions. Would you like to change the editable transaction range to All?', () => {
+                submitting.value = true;
+                showLoading(() => submitting.value);
+
+                userStore.updateUserTransactionEditScope({
+                    transactionEditScope: TransactionEditScopeType.All.type
+                }).then(() => {
+                    submitting.value = false;
+                    hideLoading();
+
+                    showToast('Your editable transaction range has been set to All');
+                }).catch(error => {
+                    submitting.value = false;
+                    hideLoading();
+
+                    if (!error.processed) {
+                        showToast(error.message || error);
+                    }
+                });
+            });
+        } else if (!error.processed) {
+            showToast(error.message || error);
+        }
+    });
+}
+
+watch(() => transaction.value.comment, () => {
+    if (suppressNextCommentSuggestionReset) {
+        suppressNextCommentSuggestionReset = false;
+        return;
+    }
+
+    suggestionDismissed.value = false;
+});
+
+watch(() => transaction.value.type, () => {
+    suggestionDismissed.value = false;
+});
+
 function onUploadPicture(event: Event): void {
     if (!event || !event.target) {
         return;
@@ -1594,5 +1885,19 @@ init();
     height: calc(var(--ebk-transaction-picture-size) - 4px);
     border: 2px dashed #ccc;
     border-radius: 8px;
+}
+
+.transaction-comment-suggestion-item .transaction-comment-suggestion-title {
+    font-size: 14px;
+    font-weight: 500;
+}
+
+.transaction-comment-suggestion-item .transaction-comment-suggestion-meta {
+    font-size: 12px;
+    opacity: 0.75;
+}
+
+.log-again-today-button {
+    gap: 6px;
 }
 </style>

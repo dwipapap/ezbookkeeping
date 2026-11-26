@@ -18,6 +18,19 @@
                 </f7-list>
             </f7-popover>
 
+            <div class="numpad-quick-chips">
+                <button type="button" class="numpad-quick-chip"
+                        @click="inputTripleZero()">
+                    {{ `${digits[0]}${digits[0]}${digits[0]}` }}
+                </button>
+                <button type="button" class="numpad-quick-chip"
+                        :key="chip.amount"
+                        v-for="chip in quickAmountChips"
+                        @click="addQuickAmount(chip.amount)">
+                    {{ chip.label }}
+                </button>
+            </div>
+
             <div class="numpad-buttons">
                 <f7-button class="numpad-button numpad-button-num" @pointerup="inputNum(7)">
                     <span class="numpad-button-text numpad-button-text-normal">{{ digits[7] }}</span>
@@ -89,8 +102,18 @@ import { type BigDecimal, NumeralSystem } from '@/core/numeral.ts';
 import { AMOUNT_FACTOR } from '@/consts/numeral.ts';
 import { ALL_CURRENCIES } from '@/consts/currency.ts';
 import { isNumber } from '@/lib/common.ts';
-import { BIG_DECIMAL_ZERO, parseBigDecimal, isBigDecimal } from '@/lib/numeral.ts';
+import { BIG_DECIMAL_ZERO, parseBigDecimal, isBigDecimal, getAmountWithDecimalNumberCount } from '@/lib/numeral.ts';
 import logger from '@/lib/logger.ts';
+
+interface QuickAmountChip {
+    amount: number;
+    label: string;
+}
+
+const LARGE_NOMINAL_CURRENCIES = new Set([
+    'IDR', 'VND', 'KRW', 'JPY', 'CLP', 'COP', 'HUF',
+    'IRR', 'KHR', 'LAK', 'MMK', 'PYG', 'UGX', 'UZS'
+]);
 
 const props = defineProps<{
     modelValue: number;
@@ -138,6 +161,24 @@ const supportDecimalSeparator = computed<boolean>(() => {
     }
 
     return (ALL_CURRENCIES[props.currency]!.fraction as number) > 0;
+});
+
+const isLargeNominalCurrency = computed<boolean>(() => {
+    return !!props.currency && LARGE_NOMINAL_CURRENCIES.has(props.currency.toUpperCase());
+});
+
+const quickAmountChips = computed<QuickAmountChip[]>(() => {
+    if (isLargeNominalCurrency.value) {
+        return [10, 20, 50, 100].map(k => ({
+            amount: k * 1000,
+            label: `+${numeralSystem.value.replaceWesternArabicDigitsToLocalizedDigits(String(k))}k`
+        }));
+    }
+
+    return [5, 10, 20, 50].map(val => ({
+        amount: val,
+        label: `+${numeralSystem.value.replaceWesternArabicDigitsToLocalizedDigits(String(val))}`
+    }));
 });
 
 const currentDisplay = computed<string>(() => {
@@ -278,6 +319,125 @@ function inputNum(num: number): void {
 function inputDoubleNum(num: number): void {
     inputNum(num);
     inputNum(num);
+}
+
+function inputTripleZero(): void {
+    if (!previousValue.value && currentSymbol.value === '−') {
+        if (isNumber(props.minValue) && props.minValue >= 0) {
+            return;
+        }
+
+        currentValue.value = '-' + currentValue.value;
+        currentSymbol.value = '';
+    }
+
+    if (currentValue.value.indexOf(decimalSeparator.value) >= 0) {
+        return;
+    }
+
+    if (!currentValue.value ||
+        currentValue.value === '-' ||
+        currentValue.value === NumeralSystem.WesternArabicNumerals.digitZero ||
+        currentValue.value === `-${NumeralSystem.WesternArabicNumerals.digitZero}`) {
+        return;
+    }
+
+    const newValue = currentValue.value + NumeralSystem.WesternArabicNumerals.digitZero.repeat(3);
+
+    if (newValue.replace('-', '').length > 15) {
+        return;
+    }
+
+    const current = parseAmountFromWesternArabicNumerals(newValue);
+
+    if (Number.isNaN(current) || !Number.isFinite(current)) {
+        return;
+    }
+
+    if (isNumber(props.minValue) && current < props.minValue) {
+        return;
+    }
+
+    if (isNumber(props.maxValue) && current > props.maxValue) {
+        return;
+    }
+
+    currentValue.value = newValue;
+}
+
+function getEvaluatedValue(): BigDecimal | null {
+    if (currentSymbol.value && currentValue.value.length >= 1) {
+        const previous: BigDecimal = parseBigDecimal(parseAmountFromWesternArabicNumerals(previousValue.value));
+        const current: BigDecimal = parseBigDecimal(parseAmountFromWesternArabicNumerals(currentValue.value));
+        let finalValue: BigDecimal = BIG_DECIMAL_ZERO;
+
+        switch (currentSymbol.value) {
+            case '+':
+                finalValue = previous.add(current);
+                break;
+            case '−':
+                finalValue = previous.subtract(current);
+                break;
+            case '×':
+                finalValue = previous.multiply(current).divide(AMOUNT_FACTOR).truncate();
+                break;
+            default:
+                finalValue = previous;
+        }
+
+        if (isNumber(props.minValue) && finalValue.lessThan(props.minValue)) {
+            showToast('Numeric Overflow');
+            return null;
+        }
+
+        if (isNumber(props.maxValue) && finalValue.greaterThan(props.maxValue)) {
+            showToast('Numeric Overflow');
+            return null;
+        }
+
+        return finalValue;
+    } else if (currentSymbol.value && currentValue.value.length < 1) {
+        if (previousValue.value) {
+            return parseBigDecimal(parseAmountFromWesternArabicNumerals(previousValue.value));
+        }
+
+        return BIG_DECIMAL_ZERO;
+    } else {
+        if (!currentValue.value || currentValue.value === '-') {
+            return BIG_DECIMAL_ZERO;
+        }
+
+        return parseBigDecimal(parseAmountFromWesternArabicNumerals(currentValue.value));
+    }
+}
+
+function addQuickAmount(majorUnits: number): void {
+    const evaluated = getEvaluatedValue();
+
+    if (!evaluated) {
+        return;
+    }
+
+    const delta = parseBigDecimal(majorUnits).multiply(AMOUNT_FACTOR);
+    let nextValue = evaluated.add(delta);
+
+    if (!supportDecimalSeparator.value) {
+        nextValue = getAmountWithDecimalNumberCount(nextValue, 0);
+    }
+
+    if (isNumber(props.minValue) && nextValue.lessThan(props.minValue)) {
+        showToast('Numeric Overflow');
+        return;
+    }
+
+    if (isNumber(props.maxValue) && nextValue.greaterThan(props.maxValue)) {
+        showToast('Numeric Overflow');
+        return;
+    }
+
+    currentValue.value = getStringValue(nextValue, false);
+    previousValue.value = '';
+    currentSymbol.value = '';
 }
 
 function inputDecimalSeparator(): void {
@@ -477,6 +637,46 @@ watch(() => props.flipNegative, (newValue) => {
 
 .numpad-values {
     border-bottom: 1px solid var(--f7-page-bg-color);
+}
+
+.numpad-quick-chips {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 12px;
+    overflow-x: auto;
+    white-space: nowrap;
+    border-bottom: 1px solid var(--f7-page-bg-color);
+    scrollbar-width: none;
+    -ms-overflow-style: none;
+    -webkit-overflow-scrolling: touch;
+}
+
+.numpad-quick-chips::-webkit-scrollbar {
+    display: none;
+}
+
+.numpad-quick-chip {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    flex: 0 0 auto;
+    height: 30px;
+    padding: 0 12px;
+    border: 1px solid rgba(var(--f7-theme-color-rgb), 0.25);
+    border-radius: 999px;
+    background-color: rgba(var(--f7-theme-color-rgb), 0.1);
+    color: var(--f7-theme-color);
+    font-size: 13px;
+    font-weight: 500;
+    line-height: 1;
+    cursor: pointer;
+    user-select: none;
+    touch-action: manipulation;
+}
+
+.numpad-quick-chip:active {
+    background-color: rgba(var(--f7-theme-color-rgb), 0.22);
 }
 
 .numpad-value {

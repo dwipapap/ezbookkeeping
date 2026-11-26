@@ -181,6 +181,20 @@
             <f7-list-item :title="tt('No transaction data')"></f7-list-item>
         </f7-list>
 
+        <div class="transaction-swipe-hint-banner"
+             v-if="!loading && !noTransaction && !swipeHintDismissed && pageType !== TransactionListPageType.Gallery.type">
+            <div class="transaction-swipe-hint-content">
+                <f7-icon class="transaction-swipe-hint-icon" f7="hand_draw"></f7-icon>
+                <span class="transaction-swipe-hint-text">{{ tt('Tip: Swipe left on any transaction to log it again in 1 tap') }}</span>
+            </div>
+            <button type="button"
+                    class="transaction-swipe-hint-close"
+                    :aria-label="tt('Close')"
+                    @click="dismissSwipeHint">
+                <f7-icon f7="xmark" size="14"></f7-icon>
+            </button>
+        </div>
+
         <f7-block class="combination-list-wrapper"
                   :class="{ 'margin-vertical': index > 0 || pageType === TransactionListPageType.Calendar.type || showSearchbar, 'margin-vertical-half': index === 0 && pageType !== TransactionListPageType.Calendar.type && !showSearchbar, 'no-accordion-toggle': pageType !== TransactionListPageType.List.type && pageType !== TransactionListPageType.Gallery.type }"
                   :key="transactionMonthList.yearDashMonth" v-for="(transactionMonthList, index) in transactions">
@@ -227,6 +241,7 @@
                                       :link="`/transaction/detail?id=${transaction.id}&type=${transaction.type}`"
                                       :key="transaction.id"
                                       v-for="(transaction, idx) in transactionMonthList.items"
+                                      @swipeout:open="dismissSwipeHint"
                         >
                             <template #media>
                                 <div class="display-flex flex-direction-column transaction-date" :style="getTransactionDateStyle(transaction, idx > 0 ? transactionMonthList.items[idx - 1] : undefined)">
@@ -306,6 +321,10 @@
                             </template>
                             <f7-swipeout-actions :left="textDirection === TextDirection.RTL"
                                                  :right="textDirection === TextDirection.LTR">
+                                <f7-swipeout-button color="green" close
+                                                    :text="tt('Log Again')"
+                                                    v-if="transaction.type !== TransactionType.ModifyBalance"
+                                                    @click="logAgainToday(transaction)"></f7-swipeout-button>
                                 <f7-swipeout-button color="primary" close
                                                     :text="tt('Duplicate')"
                                                     v-if="transaction.type !== TransactionType.ModifyBalance"
@@ -653,7 +672,8 @@
 
 <script setup lang="ts">
 import { ref, computed, nextTick, onMounted, onUnmounted } from 'vue';
-import type { Router } from 'framework7/types';
+import { f7ready } from 'framework7-vue';
+import type { Router, Toast } from 'framework7/types';
 
 import { useI18n } from '@/locales/helpers.ts';
 import { scrollToSelectedItem } from '@/lib/ui/common.ts';
@@ -687,7 +707,7 @@ import {
 import { AmountFilterType } from '@/core/numeral.ts';
 import { TransactionType } from '@/core/transaction.ts';
 import type { TransactionCategory } from '@/models/transaction_category.ts';
-import { type Transaction, TransactionTagFilter } from '@/models/transaction.ts';
+import { Transaction, TransactionTagFilter } from '@/models/transaction.ts';
 
 import {
     isDefined,
@@ -697,6 +717,7 @@ import {
 import { BIG_DECIMAL_ZERO } from '@/lib/numeral.ts';
 import {
     getCurrentUnixTime,
+    getTimezoneOffsetMinutes,
     parseDateTimeFromUnixTime,
     getDayFirstDateTimeBySpecifiedUnixTime,
     getYearMonthFirstUnixTime,
@@ -720,6 +741,7 @@ import {
     transactionTypeToCategoryType
 } from '@/lib/category.ts';
 import { allTransactionPictures } from '@/lib/transaction.ts';
+import { generateRandomUUID } from '@/lib/misc.ts';
 
 const props = defineProps<{
     f7route: Router.Route;
@@ -798,15 +820,32 @@ const transactionCategoriesStore = useTransactionCategoriesStore();
 const transactionTagsStore = useTransactionTagsStore();
 const transactionsStore = useTransactionsStore();
 
+const SWIPE_HINT_DISMISSED_STORAGE_KEY = 'ebk_mobile_txn_swipe_hint_dismissed';
+
+function isSwipeHintDismissed(): boolean {
+    if (typeof window === 'undefined' || typeof localStorage === 'undefined') {
+        return true;
+    }
+
+    try {
+        return localStorage.getItem(SWIPE_HINT_DISMISSED_STORAGE_KEY) === '1';
+    } catch {
+        return false;
+    }
+}
+
 const loadingError = ref<unknown | null>(null);
 const loadingMore = ref<boolean>(false);
 const transactionToDelete = ref<Transaction | null>(null);
+const loggingAgainTransactionId = ref<string | null>(null);
+const swipeHintDismissed = ref<boolean>(isSwipeHintDismissed());
 const transactionInvisibleYearMonths = ref<Record<TextualYearMonth, boolean>>({});
 const transactionYearMonthListHeights = ref<Record<TextualYearMonth, number>>({});
 const showSearchbar = ref<boolean>(false);
 const showCustomDateRangeSheet = ref<boolean>(false);
 const showCustomMonthSheet = ref<boolean>(false);
 const showDeleteActionSheet = ref<boolean>(false);
+let activeUndoToast: Toast.Toast | null = null;
 
 const textDirection = computed<TextDirection>(() => getCurrentLanguageTextDirection());
 const isDarkMode = computed<boolean>(() => environmentsStore.framework7DarkMode || false);
@@ -1487,6 +1526,131 @@ function duplicate(transaction: Transaction): void {
     props.f7router.navigate(`/transaction/add?id=${transaction.id}&type=${transaction.type}`);
 }
 
+function dismissSwipeHint(): void {
+    if (swipeHintDismissed.value) {
+        return;
+    }
+
+    swipeHintDismissed.value = true;
+
+    if (typeof window !== 'undefined' && typeof localStorage !== 'undefined') {
+        try {
+            localStorage.setItem(SWIPE_HINT_DISMISSED_STORAGE_KEY, '1');
+        } catch {
+            // ignore storage write errors
+        }
+    }
+}
+
+function buildTodayTransactionCopy(transaction: Transaction): Transaction {
+    const now = getCurrentUnixTime();
+    const copy = Transaction.createNewTransaction(
+        transaction.type,
+        now,
+        '',
+        getTimezoneOffsetMinutes(now)
+    );
+
+    copy.setCategoryId(transaction.categoryId);
+    copy.sourceAccountId = transaction.sourceAccountId;
+    copy.destinationAccountId = transaction.type === TransactionType.Transfer ? transaction.destinationAccountId : '0';
+    copy.sourceAmount = transaction.sourceAmount;
+    copy.destinationAmount = transaction.type === TransactionType.Transfer ? transaction.destinationAmount : 0;
+    copy.hideAmount = transaction.hideAmount;
+    copy.tagIds = transaction.tagIds ? [...transaction.tagIds] : [];
+    copy.comment = transaction.comment;
+
+    return copy;
+}
+
+function undoLoggedTransaction(createdTransaction: Transaction): void {
+    showLoading();
+
+    transactionsStore.deleteTransaction({
+        transaction: createdTransaction,
+        defaultCurrency: selectedAccountDefaultCurrency.value
+    }).then(() => {
+        hideLoading();
+        reload();
+        showToast('Transaction undone');
+    }).catch(error => {
+        hideLoading();
+
+        if (!error.processed) {
+            showToast(error.message || error);
+        }
+    });
+}
+
+function showLogAgainUndoToast(createdTransaction: Transaction): void {
+    if (activeUndoToast) {
+        activeUndoToast.close();
+        activeUndoToast = null;
+    }
+
+    let undone = false;
+
+    f7ready((f7Instance) => {
+        const toast = f7Instance.toast.create({
+            text: tt('Transaction logged for today'),
+            position: 'bottom',
+            closeTimeout: 5000,
+            closeButton: true,
+            closeButtonText: tt('Undo'),
+            destroyOnClose: true,
+            on: {
+                closeButtonClick: () => {
+                    if (undone) {
+                        return;
+                    }
+
+                    undone = true;
+                    undoLoggedTransaction(createdTransaction);
+                },
+                closed: () => {
+                    if (activeUndoToast === toast) {
+                        activeUndoToast = null;
+                    }
+                }
+            }
+        });
+
+        activeUndoToast = toast;
+        toast.open();
+    });
+}
+
+function logAgainToday(transaction: Transaction): void {
+    if (transaction.type === TransactionType.ModifyBalance || loggingAgainTransactionId.value || loading.value) {
+        return;
+    }
+
+    dismissSwipeHint();
+    loggingAgainTransactionId.value = transaction.id;
+    showLoading(() => !!loggingAgainTransactionId.value);
+
+    const newTransaction = buildTodayTransactionCopy(transaction);
+
+    transactionsStore.saveTransaction({
+        transaction: newTransaction,
+        defaultCurrency: selectedAccountDefaultCurrency.value,
+        isEdit: false,
+        clientSessionId: generateRandomUUID()
+    }).then(createdTransaction => {
+        loggingAgainTransactionId.value = null;
+        hideLoading();
+        reload();
+        showLogAgainUndoToast(createdTransaction);
+    }).catch(error => {
+        loggingAgainTransactionId.value = null;
+        hideLoading();
+
+        if (!error.processed) {
+            showToast(error.message || error);
+        }
+    });
+}
+
 function edit(transaction: Transaction): void {
     props.f7router.navigate(`/transaction/edit?id=${transaction.id}&type=${transaction.type}`);
 }
@@ -1576,6 +1740,11 @@ onMounted(() => {
 
 onUnmounted(() => {
     window.removeEventListener('resize', onResize);
+
+    if (activeUndoToast) {
+        activeUndoToast.close();
+        activeUndoToast = null;
+    }
 });
 
 init();
@@ -1798,5 +1967,56 @@ html[dir="rtl"] .list.transaction-info-list li.transaction-info .transaction-foo
     width: 100%;
     height: 100%;
     display: block;
+}
+
+.transaction-swipe-hint-banner {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+    margin: 8px 16px 4px;
+    padding: 8px 12px;
+    border-radius: 14px;
+    background-color: var(--ebk-primary-soft);
+    color: var(--ebk-on-primary-soft);
+    border: 1px solid rgba(var(--ebk-primary-color), 0.16);
+    font-size: 13px;
+    line-height: 1.35;
+}
+
+.transaction-swipe-hint-content {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    min-width: 0;
+}
+
+.transaction-swipe-hint-icon {
+    font-size: 18px;
+    flex-shrink: 0;
+}
+
+.transaction-swipe-hint-text {
+    min-width: 0;
+}
+
+.transaction-swipe-hint-close {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    width: 24px;
+    height: 24px;
+    padding: 0;
+    border: 0;
+    border-radius: 50%;
+    background: transparent;
+    color: inherit;
+    opacity: 0.75;
+    cursor: pointer;
+}
+
+.transaction-swipe-hint-close:active {
+    opacity: 1;
 }
 </style>

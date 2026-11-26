@@ -59,6 +59,8 @@ export interface ApplicationSettings extends BaseApplicationSetting {
     overviewAccountFilterInHomePage: Record<string, boolean>;
     overviewTransactionCategoryFilterInHomePage: Record<string, boolean>;
     overviewTransactionTagFilterInHomePage: string;
+    categoryMonthlyBudgets: string;
+    savingsGoals: string;
     // Transaction List Page
     quickSaveButtonStyleInMobileTransactionListPage: number;
     quickAddButtonActionInMobileTransactionEditPage: number;
@@ -157,6 +159,8 @@ export const ALL_ALLOWED_CLOUD_SYNC_APP_SETTING_KEY_TYPES: Record<string, UserAp
     'overviewAccountFilterInHomePage': UserApplicationCloudSettingType.StringBooleanMap,
     'overviewTransactionCategoryFilterInHomePage': UserApplicationCloudSettingType.StringBooleanMap,
     'overviewTransactionTagFilterInHomePage': UserApplicationCloudSettingType.String,
+    'categoryMonthlyBudgets': UserApplicationCloudSettingType.String,
+    'savingsGoals': UserApplicationCloudSettingType.String,
     // Transaction List Page
     'itemsCountInTransactionListPage': UserApplicationCloudSettingType.Number,
     'showTotalAmountInTransactionListPage': UserApplicationCloudSettingType.Boolean,
@@ -235,6 +239,8 @@ export const DEFAULT_APPLICATION_SETTINGS: ApplicationSettings = {
     overviewAccountFilterInHomePage: {},
     overviewTransactionCategoryFilterInHomePage: {},
     overviewTransactionTagFilterInHomePage: '',
+    categoryMonthlyBudgets: '',
+    savingsGoals: '',
     // Transaction List Page
     itemsCountInTransactionListPage: 15,
     showTotalAmountInTransactionListPage: true,

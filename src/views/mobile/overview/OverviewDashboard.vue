@@ -1,7 +1,7 @@
 <template>
     <div class="mobile-overview-dashboard">
         <div class="mobile-overview-dashboard-item" :key="widget.id" v-for="widget in layout.widgets">
-            <overview-widget :widget="widget" :loading="loading" @navigate="onNavigate" />
+            <overview-widget :widget="widget" :loading="loading" @navigate="onNavigate" @refresh="emit('refresh')" />
         </div>
 
         <f7-block class="text-align-center text-color-gray padding-vertical" v-if="!layout.widgets.length">
@@ -24,6 +24,7 @@ defineProps<{
 
 const emit = defineEmits<{
     (e: 'navigate', type: MobileOverviewWidgetNavigationType, path?: string): void;
+    (e: 'refresh'): void;
 }>();
 
 const { tt } = useI18n();

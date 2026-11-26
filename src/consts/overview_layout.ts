@@ -705,6 +705,125 @@ export const DESKTOP_OVERVIEW_WIDGET_DEFINITIONS: PartialRecord<OverviewWidgetTy
         dataRequirements: [
             OverviewWidgetDataRequirement.DailyTransactionAmounts
         ]
+    },
+    [OverviewWidgetType.QuickTemplates]: {
+        type: OverviewWidgetType.QuickTemplates,
+        name: 'Quick Record',
+        supportsSettings: [
+            WIDGET_TITLE_SETTING,
+            {
+                settingType: 'itemCountSelect',
+                settingName: 'itemCount',
+                displayName: 'Item Count',
+                itemCountValues: [4, 6, 8, 10, 12]
+            },
+            {
+                settingType: 'switch',
+                settingName: 'instantLog',
+                displayName: 'One-Tap Instant Log'
+            }
+        ],
+        defaultSettings: {
+            itemCount: 6,
+            instantLog: false
+        },
+        defaultWidth: 4,
+        defaultHeight: 3,
+        minWidth: 3,
+        minHeight: 2,
+        dataRequirements: [
+            OverviewWidgetDataRequirement.Accounts,
+            OverviewWidgetDataRequirement.TransactionCategories
+        ]
+    },
+    [OverviewWidgetType.UpcomingBills]: {
+        type: OverviewWidgetType.UpcomingBills,
+        name: 'Upcoming Bills & Subscriptions',
+        supportsSettings: [
+            WIDGET_TITLE_SETTING,
+            {
+                settingType: 'customSelect',
+                settingName: 'daysAhead',
+                displayName: 'Lookahead Period',
+                selectValues: [
+                    { name: 'Next 7 Days', value: 7 },
+                    { name: 'Next 14 Days', value: 14 },
+                    { name: 'Next 30 Days', value: 30 }
+                ]
+            },
+            {
+                settingType: 'itemCountSelect',
+                settingName: 'itemCount',
+                displayName: 'Item Count',
+                itemCountValues: [3, 4, 5, 6, 8, 10]
+            }
+        ],
+        defaultSettings: {
+            daysAhead: 14,
+            itemCount: 5
+        },
+        defaultWidth: 4,
+        defaultHeight: 3,
+        minWidth: 3,
+        minHeight: 3,
+        dataRequirements: [
+            OverviewWidgetDataRequirement.Accounts,
+            OverviewWidgetDataRequirement.TransactionCategories
+        ]
+    },
+    [OverviewWidgetType.CategoryBudgets]: {
+        type: OverviewWidgetType.CategoryBudgets,
+        name: 'Monthly Category Budgets',
+        supportsSettings: [
+            WIDGET_TITLE_SETTING,
+            {
+                settingType: 'itemCountSelect',
+                settingName: 'itemCount',
+                displayName: 'Item Count',
+                itemCountValues: [3, 4, 5, 6, 8, 10]
+            },
+            {
+                settingType: 'switch',
+                settingName: 'showDailySafeToSpend',
+                displayName: 'Show Daily Safe-to-Spend'
+            }
+        ],
+        defaultSettings: {
+            itemCount: 5,
+            showDailySafeToSpend: true
+        },
+        defaultWidth: 4,
+        defaultHeight: 4,
+        minWidth: 3,
+        minHeight: 3,
+        dataRequirements: [
+            OverviewWidgetDataRequirement.Accounts,
+            OverviewWidgetDataRequirement.TransactionCategories,
+            OverviewWidgetDataRequirement.TransactionCategoryStatistics
+        ]
+    },
+    [OverviewWidgetType.SavingsGoals]: {
+        type: OverviewWidgetType.SavingsGoals,
+        name: 'Savings Goals',
+        supportsSettings: [
+            WIDGET_TITLE_SETTING,
+            {
+                settingType: 'itemCountSelect',
+                settingName: 'itemCount',
+                displayName: 'Item Count',
+                itemCountValues: [2, 3, 4, 5, 6]
+            }
+        ],
+        defaultSettings: {
+            itemCount: 4
+        },
+        defaultWidth: 4,
+        defaultHeight: 4,
+        minWidth: 3,
+        minHeight: 3,
+        dataRequirements: [
+            OverviewWidgetDataRequirement.Accounts
+        ]
     }
 };
 
@@ -1280,6 +1399,117 @@ export const MOBILE_OVERVIEW_WIDGET_DEFINITIONS: PartialRecord<OverviewWidgetTyp
             darkBackgroundColor: DEFAULT_MOBILE_ADD_TRANSACTION_BUTTON_BACKGROUND_COLOR
         },
         dataRequirements: []
+    },
+    [OverviewWidgetType.QuickTemplates]: {
+        type: OverviewWidgetType.QuickTemplates,
+        name: 'Quick Record',
+        supportsSettings: [
+            WIDGET_TITLE_SETTING,
+            WIDGET_SHOW_TITLE_SETTING,
+            {
+                settingType: 'itemCountSelect',
+                settingName: 'itemCount',
+                displayName: 'Item Count',
+                itemCountValues: [4, 6, 8, 10, 12]
+            },
+            {
+                settingType: 'switch',
+                settingName: 'instantLog',
+                displayName: 'One-Tap Instant Log'
+            }
+        ],
+        defaultSettings: {
+            showTitle: true,
+            itemCount: 8,
+            instantLog: false
+        },
+        dataRequirements: [
+            OverviewWidgetDataRequirement.Accounts,
+            OverviewWidgetDataRequirement.TransactionCategories
+        ]
+    },
+    [OverviewWidgetType.UpcomingBills]: {
+        type: OverviewWidgetType.UpcomingBills,
+        name: 'Upcoming Bills & Subscriptions',
+        supportsSettings: [
+            WIDGET_TITLE_SETTING,
+            WIDGET_SHOW_TITLE_SETTING,
+            {
+                settingType: 'customSelect',
+                settingName: 'daysAhead',
+                displayName: 'Lookahead Period',
+                selectValues: [
+                    { name: 'Next 7 Days', value: 7 },
+                    { name: 'Next 14 Days', value: 14 },
+                    { name: 'Next 30 Days', value: 30 }
+                ]
+            },
+            {
+                settingType: 'itemCountSelect',
+                settingName: 'itemCount',
+                displayName: 'Item Count',
+                itemCountValues: [3, 4, 5, 6, 8, 10]
+            }
+        ],
+        defaultSettings: {
+            showTitle: true,
+            daysAhead: 14,
+            itemCount: 5
+        },
+        dataRequirements: [
+            OverviewWidgetDataRequirement.Accounts,
+            OverviewWidgetDataRequirement.TransactionCategories
+        ]
+    },
+    [OverviewWidgetType.CategoryBudgets]: {
+        type: OverviewWidgetType.CategoryBudgets,
+        name: 'Monthly Category Budgets',
+        supportsSettings: [
+            WIDGET_TITLE_SETTING,
+            WIDGET_SHOW_TITLE_SETTING,
+            {
+                settingType: 'itemCountSelect',
+                settingName: 'itemCount',
+                displayName: 'Item Count',
+                itemCountValues: [3, 4, 5, 6, 8, 10]
+            },
+            {
+                settingType: 'switch',
+                settingName: 'showDailySafeToSpend',
+                displayName: 'Show Daily Safe-to-Spend'
+            }
+        ],
+        defaultSettings: {
+            showTitle: true,
+            itemCount: 5,
+            showDailySafeToSpend: true
+        },
+        dataRequirements: [
+            OverviewWidgetDataRequirement.Accounts,
+            OverviewWidgetDataRequirement.TransactionCategories,
+            OverviewWidgetDataRequirement.TransactionCategoryStatistics
+        ]
+    },
+    [OverviewWidgetType.SavingsGoals]: {
+        type: OverviewWidgetType.SavingsGoals,
+        name: 'Savings Goals',
+        supportsSettings: [
+            WIDGET_TITLE_SETTING,
+            WIDGET_SHOW_TITLE_SETTING,
+            {
+                settingType: 'itemCountSelect',
+                settingName: 'itemCount',
+                displayName: 'Item Count',
+                itemCountValues: [2, 3, 4, 5, 6]
+            }
+        ],
+        defaultSettings: {
+            showTitle: true,
+            itemCount: 4
+        },
+        dataRequirements: [
+            OverviewWidgetDataRequirement.Accounts
+        ]
     }
 };
 

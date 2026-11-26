@@ -72,6 +72,33 @@
                                    :light-background-color="widget.settings['lightBackgroundColor'] as ColorValue"
                                    :dark-background-color="widget.settings['darkBackgroundColor'] as ColorValue"
                                    v-else-if="widget.type === OverviewWidgetType.AddTransactionButton" />
+
+    <quick-templates-widget :loading="loading" :editing="editing" :title="widgetTitle"
+                            :show-title="widget.settings['showTitle'] as boolean"
+                            :item-count="widget.settings['itemCount'] as number"
+                            :instant-log="widget.settings['instantLog'] as boolean"
+                            @navigate="onNavigate"
+                            @refresh="emit('refresh')"
+                            v-else-if="widget.type === OverviewWidgetType.QuickTemplates" />
+
+    <upcoming-bills-widget :loading="loading" :editing="editing" :title="widgetTitle"
+                           :show-title="widget.settings['showTitle'] as boolean"
+                           :days-ahead="widget.settings['daysAhead'] as number"
+                           :item-count="widget.settings['itemCount'] as number"
+                           @navigate="onNavigate"
+                           v-else-if="widget.type === OverviewWidgetType.UpcomingBills" />
+
+    <category-budgets-widget :loading="loading" :editing="editing" :title="widgetTitle"
+                             :show-title="widget.settings['showTitle'] as boolean"
+                             :item-count="widget.settings['itemCount'] as number"
+                             :show-daily-safe-to-spend="widget.settings['showDailySafeToSpend'] as boolean"
+                             @navigate="onNavigate"
+                             v-else-if="widget.type === OverviewWidgetType.CategoryBudgets" />
+
+    <savings-goals-widget :loading="loading" :editing="editing" :title="widgetTitle"
+                          :show-title="widget.settings['showTitle'] as boolean"
+                          :item-count="widget.settings['itemCount'] as number"
+                          v-else-if="widget.type === OverviewWidgetType.SavingsGoals" />
 </template>
 
 <script setup lang="ts">
@@ -88,6 +115,10 @@ import ExpenseCategoryRankingWidget from './widgets/ExpenseCategoryRankingWidget
 import RecentTransactionsWidget from './widgets/RecentTransactionsWidget.vue';
 import TransactionCalendarWidget from './widgets/TransactionCalendarWidget.vue';
 import AddTransactionButtonWidget from './widgets/AddTransactionButtonWidget.vue';
+import QuickTemplatesWidget from './widgets/QuickTemplatesWidget.vue';
+import UpcomingBillsWidget from './widgets/UpcomingBillsWidget.vue';
+import CategoryBudgetsWidget from './widgets/CategoryBudgetsWidget.vue';
+import SavingsGoalsWidget from './widgets/SavingsGoalsWidget.vue';
 
 import type { ColorValue } from '@/core/color.ts';
 import {
@@ -105,6 +136,7 @@ const props = defineProps<{
 
 const emit = defineEmits<{
     (e: 'navigate', type: MobileOverviewWidgetNavigationType, path?: string): void;
+    (e: 'refresh'): void;
 }>();
 
 const widgetTitle = computed<string>(() => {
