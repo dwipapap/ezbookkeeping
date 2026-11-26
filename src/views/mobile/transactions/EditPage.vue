@@ -433,7 +433,7 @@
                 class="transaction-edit-comment"
                 style="height: auto"
                 autocomplete="off"
-                :class="{ 'readonly': mode === TransactionEditPageMode.View }"
+                :class="{ 'readonly': mode === TransactionEditPageMode.View, 'has-suggestions': showCommentSuggestions }"
                 :label="transactionDescriptionTitle"
                 :placeholder="mode !== TransactionEditPageMode.View ? tt('Your transaction description (optional)') : ''"
                 v-textarea-auto-size
@@ -444,24 +444,32 @@
             ></f7-list-input>
 
             <f7-list-item
-                link="#" no-chevron
-                class="transaction-comment-suggestion-item"
-                :key="`${suggestion.type}-${suggestion.comment}`"
-                v-for="suggestion in commentSuggestions"
-                v-show="showCommentSuggestions"
-                @pointerdown.prevent
-                @click="applyCommentSuggestion(suggestion)"
+                class="transaction-comment-suggestions-row item-no-divider"
+                v-if="showCommentSuggestions"
             >
-                <template #title>
-                    <span class="transaction-comment-suggestion-title">{{ suggestion.comment }}</span>
-                </template>
-                <template #footer v-if="getSuggestionMetaText(suggestion)">
-                    <span class="transaction-comment-suggestion-meta">{{ getSuggestionMetaText(suggestion) }}</span>
+                <template #inner>
+                    <div class="transaction-comment-suggestions-strip">
+                        <button
+                            type="button"
+                            class="transaction-comment-suggestion-item transaction-comment-suggestion-chip"
+                            :key="`${suggestion.type}-${suggestion.comment}`"
+                            v-for="suggestion in commentSuggestions"
+                            @pointerdown.prevent
+                            @click="applyCommentSuggestion(suggestion)"
+                        >
+                            <span class="transaction-comment-suggestion-title">{{ suggestion.comment }}</span>
+                            <span class="transaction-comment-suggestion-meta" v-if="getSuggestionMetaText(suggestion)">
+                                {{ getSuggestionMetaText(suggestion) }}
+                            </span>
+                        </button>
+                    </div>
                 </template>
             </f7-list-item>
         </f7-list>
 
-        <f7-block class="margin-vertical-half"
+        <div class="transaction-edit-bottom-spacer" v-if="mode !== TransactionEditPageMode.View"></div>
+
+        <f7-block class="log-again-today-block"
                   v-if="!loading && pageTypeAndMode?.type === TransactionEditPageType.Transaction && mode === TransactionEditPageMode.View && transaction.type !== TransactionType.ModifyBalance">
             <f7-button tonal round large
                        class="log-again-today-button"
@@ -1887,17 +1895,90 @@ init();
     border-radius: 8px;
 }
 
-.transaction-comment-suggestion-item .transaction-comment-suggestion-title {
-    font-size: 14px;
-    font-weight: 500;
+.transaction-edit-comment.has-suggestions .item-inner {
+    padding-bottom: 4px;
 }
 
-.transaction-comment-suggestion-item .transaction-comment-suggestion-meta {
-    font-size: 12px;
-    opacity: 0.75;
+.transaction-edit-comment.has-suggestions .item-inner::after {
+    display: none;
+}
+
+.transaction-edit-comment.has-suggestions textarea {
+    min-height: 36px;
+}
+
+.transaction-comment-suggestions-row .item-inner {
+    padding-top: 2px;
+    padding-bottom: 12px;
+}
+
+.transaction-comment-suggestions-strip {
+    display: flex;
+    gap: 8px;
+    overflow-x: auto;
+    width: 100%;
+    padding: 2px 0;
+    scrollbar-width: none;
+    -webkit-overflow-scrolling: touch;
+}
+
+.transaction-comment-suggestions-strip::-webkit-scrollbar {
+    display: none;
+}
+
+.transaction-comment-suggestion-chip {
+    display: inline-flex;
+    flex-direction: column;
+    align-items: flex-start;
+    flex: 0 0 auto;
+    width: auto !important;
+    max-width: 240px;
+    padding: 7px 12px;
+    border: 0;
+    border-radius: 14px;
+    background-color: rgba(var(--f7-theme-color-rgb), 0.1);
+    color: var(--f7-text-color);
+    font: inherit;
+    text-align: start;
+    cursor: pointer;
+    touch-action: manipulation;
+}
+
+.transaction-comment-suggestion-chip:active {
+    opacity: 0.78;
+}
+
+.transaction-comment-suggestion-chip .transaction-comment-suggestion-title {
+    font-size: 13.5px;
+    font-weight: 600;
+    line-height: 1.25;
+    max-width: 100%;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.transaction-comment-suggestion-chip .transaction-comment-suggestion-meta {
+    font-size: 11.5px;
+    opacity: 0.72;
+    line-height: 1.25;
+    max-width: 100%;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.transaction-edit-bottom-spacer {
+    height: 92px;
+}
+
+.log-again-today-block {
+    margin-top: 12px;
+    margin-bottom: 24px;
 }
 
 .log-again-today-button {
     gap: 6px;
+    font-weight: 600;
 }
 </style>

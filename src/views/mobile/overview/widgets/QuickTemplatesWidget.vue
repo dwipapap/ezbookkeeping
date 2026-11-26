@@ -46,7 +46,7 @@
                             :key="template.id"
                             v-for="template in templates"
                             @click="onTemplateTap(template)">
-                        <span class="quick-templates-widget__pill-icon">
+                        <span class="quick-templates-widget__pill-icon" :style="getPillIconBgStyle(template)">
                             <ItemIcon :icon-type="getCategoryIconType(getTemplateCategory(template)?.iconType)"
                                       :icon-id="getTemplateCategory(template)?.icon ?? ''"
                                       :color="getTemplateCategory(template)?.color"
@@ -145,6 +145,14 @@ const templates = computed<TransactionTemplate[]>(() => transactionTemplatesStor
 
 function getTemplateCategory(template: TransactionTemplate): TransactionCategory | undefined {
     return transactionCategoriesStore.allTransactionCategoriesMap[template.categoryId];
+}
+
+function getPillIconBgStyle(template: TransactionTemplate): Record<string, string> {
+    const color = getTemplateCategory(template)?.color;
+    if (color && /^[0-9a-f]{6}$/i.test(color)) {
+        return { 'background-color': `#${color}22` };
+    }
+    return {};
 }
 
 function getDisplayTemplateAmount(template: TransactionTemplate): string {
@@ -350,9 +358,15 @@ onBeforeUnmount(() => {
 </script>
 
 <style scoped>
+.quick-templates-widget__strip-item :deep(.item-content) {
+    padding-inline-start: 0;
+}
+
 .quick-templates-widget__strip-item :deep(.item-inner) {
     min-width: 0;
-    padding-inline-end: var(--f7-list-item-padding-horizontal);
+    padding-inline-end: 0;
+    padding-top: 4px;
+    padding-bottom: 10px;
 }
 
 .quick-templates-widget__strip {
@@ -360,7 +374,8 @@ onBeforeUnmount(() => {
     overflow-x: auto;
     gap: 10px;
     width: 100%;
-    padding: 4px 0;
+    padding: 2px 14px;
+    box-sizing: border-box;
     scrollbar-width: none;
     -webkit-overflow-scrolling: touch;
 }
@@ -372,22 +387,28 @@ onBeforeUnmount(() => {
 .quick-templates-widget__pill {
     display: inline-flex;
     align-items: center;
-    gap: 8px;
+    gap: 9px;
     flex: 0 0 auto;
-    max-width: 196px;
-    padding: 8px 12px;
-    border-radius: 14px;
-    border: 1px solid var(--f7-list-item-border-color, rgba(128, 128, 128, 0.2));
-    background-color: var(--f7-list-strong-bg-color, var(--f7-card-bg-color));
+    width: auto !important;
+    max-width: 204px;
+    padding: 9px 13px;
+    border-radius: 16px;
+    border: 0;
+    background-color: rgba(128, 128, 128, 0.08);
     color: var(--f7-text-color);
     font: inherit;
     text-align: start;
     cursor: pointer;
+    touch-action: manipulation;
     transition: opacity 0.15s ease, transform 0.1s ease;
 }
 
+:root.dark .quick-templates-widget__pill {
+    background-color: rgba(255, 255, 255, 0.07);
+}
+
 .quick-templates-widget__pill:active:not(:disabled) {
-    transform: scale(0.97);
+    transform: scale(0.96);
     opacity: 0.82;
 }
 
@@ -400,9 +421,10 @@ onBeforeUnmount(() => {
 }
 
 .quick-templates-widget__pill--add {
-    border-style: dashed;
+    background-color: rgba(var(--f7-theme-color-rgb), 0.10);
     color: var(--f7-theme-color);
-    gap: 4px;
+    gap: 5px;
+    padding: 9px 14px;
 }
 
 .quick-templates-widget__pill-icon {
@@ -410,22 +432,23 @@ onBeforeUnmount(() => {
     align-items: center;
     justify-content: center;
     flex: 0 0 auto;
-    width: 28px;
-    height: 28px;
-    border-radius: 50%;
-    background-color: rgba(128, 128, 128, 0.1);
+    width: 32px;
+    height: 32px;
+    border-radius: 10px;
+    background-color: rgba(128, 128, 128, 0.12);
 }
 
 .quick-templates-widget__pill-content {
     display: flex;
     flex-direction: column;
     min-width: 0;
-    gap: 1px;
+    gap: 2px;
 }
 
 .quick-templates-widget__pill-name {
-    font-size: 0.8125rem;
+    font-size: 0.84rem;
     font-weight: 600;
+    letter-spacing: -0.01em;
     line-height: 1.2;
     overflow: hidden;
     text-overflow: ellipsis;
@@ -433,19 +456,20 @@ onBeforeUnmount(() => {
 }
 
 .quick-templates-widget__pill-amount {
-    font-size: 0.75rem;
+    font-size: 0.74rem;
     font-variant-numeric: tabular-nums;
     line-height: 1.2;
     white-space: nowrap;
 }
 
 .quick-templates-widget__pill-add-label {
-    font-size: 0.8125rem;
-    font-weight: 500;
+    font-size: 0.82rem;
+    font-weight: 600;
     white-space: nowrap;
 }
 
 .quick-templates-widget__pill-badge {
     flex: 0 0 auto;
+    opacity: 0.85;
 }
 </style>

@@ -53,7 +53,8 @@
                           v-for="item in displayItems"
                           @click="navigateToScheduleList">
                 <template #media>
-                    <div class="upcoming-bill-icon display-flex align-items-center">
+                    <div class="upcoming-bill-icon display-flex align-items-center justify-content-center"
+                         :style="getItemIconBgStyle(item)">
                         <ItemIcon :icon-type="getCategoryIconType(getItemCategory(item)?.iconType)"
                                   :icon-id="getItemCategory(item)?.icon ?? ''"
                                   :color="getItemCategory(item)?.color"
@@ -265,6 +266,15 @@ function getItemCategory(item: UpcomingBillItem): TransactionCategory | undefine
     return transactionCategoriesStore.allTransactionCategoriesMap[item.categoryId];
 }
 
+function getItemIconBgStyle(item: UpcomingBillItem): Record<string, string> {
+    const color = getItemCategory(item)?.color;
+    if (color && /^[0-9a-f]{6}$/i.test(color)) {
+        return { 'background-color': `#${color}1f` };
+    }
+
+    return {};
+}
+
 function getItemCaption(item: UpcomingBillItem): string {
     const formattedDate = formatDateTimeToShortMonthDay(parseDateTimeFromUnixTime(item.scheduledTime));
     return item.sourceAccountName ? `${item.sourceAccountName} · ${formattedDate}` : formattedDate;
@@ -306,9 +316,17 @@ function getDueBadgeClass(daysUntil: number): string {
 </script>
 
 <style scoped>
+.upcoming-bill-icon {
+    width: 36px;
+    height: 36px;
+    border-radius: 10px;
+    background-color: rgba(128, 128, 128, 0.1);
+}
+
 .upcoming-bills-summary-title {
-    font-size: 0.9em;
-    opacity: 0.8;
+    font-size: 0.88em;
+    font-weight: 500;
+    opacity: 0.78;
 }
 
 .upcoming-bills-summary-amount {

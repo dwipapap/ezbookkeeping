@@ -19,7 +19,7 @@
             </f7-popover>
 
             <div class="numpad-quick-chips">
-                <button type="button" class="numpad-quick-chip"
+                <button type="button" class="numpad-quick-chip numpad-quick-chip--accent"
                         @click="inputTripleZero()">
                     {{ `${digits[0]}${digits[0]}${digits[0]}` }}
                 </button>
@@ -642,7 +642,7 @@ watch(() => props.flipNegative, (newValue) => {
 .numpad-quick-chips {
     display: flex;
     align-items: center;
-    gap: 8px;
+    gap: 7px;
     padding: 8px 12px;
     overflow-x: auto;
     white-space: nowrap;
@@ -660,25 +660,41 @@ watch(() => props.flipNegative, (newValue) => {
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    flex: 0 0 auto;
+    flex: 1 0 auto;
     width: auto !important;
-    min-width: 52px;
-    height: 30px;
+    min-width: 54px;
+    height: 32px;
     padding: 0 12px;
-    border: 1px solid rgba(var(--f7-theme-color-rgb), 0.25);
+    border: 0;
     border-radius: 999px;
-    background-color: rgba(var(--f7-theme-color-rgb), 0.1);
-    color: var(--f7-theme-color);
+    background-color: rgba(128, 128, 128, 0.12);
+    color: var(--f7-text-color);
     font-size: 13px;
-    font-weight: 500;
+    font-weight: 600;
+    font-variant-numeric: tabular-nums;
     line-height: 1;
     cursor: pointer;
     user-select: none;
     touch-action: manipulation;
+    transition: opacity 0.1s ease, transform 0.08s ease;
+}
+
+.dark .numpad-quick-chip {
+    background-color: rgba(255, 255, 255, 0.11);
+}
+
+.numpad-quick-chip--accent {
+    background-color: rgba(var(--f7-theme-color-rgb), 0.14);
+    color: var(--f7-theme-color);
+}
+
+.dark .numpad-quick-chip--accent {
+    background-color: rgba(var(--f7-theme-color-rgb), 0.24);
 }
 
 .numpad-quick-chip:active {
-    background-color: rgba(var(--f7-theme-color-rgb), 0.22);
+    transform: scale(0.95);
+    opacity: 0.78;
 }
 
 .numpad-value {

@@ -81,9 +81,10 @@
 
                             <v-btn
                                 size="x-small"
-                                color="primary"
+                                :color="coverUrls[item.goal.id] ? undefined : 'primary'"
                                 :variant="coverUrls[item.goal.id] ? 'flat' : 'tonal'"
                                 class="savings-goal-card__quick-add"
+                                :class="{ 'savings-goal-card__quick-add--glass': !!coverUrls[item.goal.id] }"
                                 v-if="item.goal.mode === 'manual' && !editing"
                                 @click="openQuickAddSavings(item.goal, item.currency)"
                             >
@@ -116,7 +117,7 @@ import { useExchangeRatesStore } from '@/stores/exchangeRates.ts';
 
 import type { BigDecimal } from '@/core/numeral.ts';
 import type { TextualYearMonthDay } from '@/core/datetime.ts';
-import { DISPLAY_HIDDEN_AMOUNT, INCOMPLETE_AMOUNT_SUFFIX } from '@/consts/numeral.ts';
+import { AMOUNT_FACTOR, DISPLAY_HIDDEN_AMOUNT, INCOMPLETE_AMOUNT_SUFFIX } from '@/consts/numeral.ts';
 
 import {
     getCachedOverviewCoverObjectUrl,
@@ -203,6 +204,11 @@ function formatGoalAmount(amount: BigDecimal, currency: string, incomplete: bool
     return formatAmountToLocalizedNumeralsWithCurrency(amount, currency) + (incomplete ? INCOMPLETE_AMOUNT_SUFFIX : '');
 }
 
+function formatRoundedMonthlyAmount(amount: BigDecimal, currency: string): string {
+    const roundedToMajor = amount.divide(AMOUNT_FACTOR).truncate().multiply(AMOUNT_FACTOR);
+    return formatGoalAmount(roundedToMajor.isPositive() ? roundedToMajor : amount.truncate(), currency, false);
+}
+
 function buildEstimateText(goal: SavingsGoalConfig, progress: SavingsGoalProgressResult, currency: string): string {
     const parts: string[] = [];
 
@@ -213,7 +219,7 @@ function buildEstimateText(goal: SavingsGoalConfig, progress: SavingsGoalProgres
     if (goal.targetDate) {
         const dateStr = formatGregorianTextualYearMonthDayToLongDate(goal.targetDate as TextualYearMonthDay);
         if (!progress.isCompleted && progress.requiredMonthlyToHitTargetDate) {
-            const monthlyStr = formatGoalAmount(progress.requiredMonthlyToHitTargetDate, currency, false);
+            const monthlyStr = formatRoundedMonthlyAmount(progress.requiredMonthlyToHitTargetDate, currency);
             parts.push(`${dateStr} · ${tt('{amount}/mo needed', { amount: monthlyStr })}`);
         } else {
             parts.push(dateStr);
@@ -385,6 +391,13 @@ watch(goals, (newGoals) => {
 
 .savings-goal-card__quick-add {
     flex: 0 0 auto;
+    border-radius: 999px;
+}
+
+.savings-goal-card__quick-add--glass {
+    background: rgba(255, 255, 255, 0.22) !important;
+    color: #ffffff !important;
+    border: 1px solid rgba(255, 255, 255, 0.30);
 }
 
 .min-width-0 {

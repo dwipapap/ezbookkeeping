@@ -292,10 +292,24 @@ function getDueBadgeClass(daysUntil: number): string {
     justify-content: space-between;
     gap: 8px;
     margin-inline: 6px;
-    padding: 8px 12px;
+    padding: 6px 12px;
     border-radius: var(--ebk-radius-md);
     background: rgba(var(--v-theme-on-surface), 0.04);
     border: 1px solid rgba(var(--ebk-border), 0.06);
+}
+
+.upcoming-bills-widget :deep(.v-list) {
+    scrollbar-width: none;
+}
+
+.upcoming-bills-widget :deep(.v-list::-webkit-scrollbar) {
+    display: none;
+}
+
+.upcoming-bills-widget__item {
+    min-height: 44px !important;
+    padding-top: 4px !important;
+    padding-bottom: 4px !important;
 }
 
 .upcoming-bills-widget__summary-label {

@@ -184,14 +184,14 @@
         <div class="transaction-swipe-hint-banner"
              v-if="!loading && !noTransaction && !swipeHintDismissed && pageType !== TransactionListPageType.Gallery.type">
             <div class="transaction-swipe-hint-content">
-                <f7-icon class="transaction-swipe-hint-icon" f7="hand_draw"></f7-icon>
-                <span class="transaction-swipe-hint-text">{{ tt('Tip: Swipe left on any transaction to log it again in 1 tap') }}</span>
+                <f7-icon class="transaction-swipe-hint-icon" f7="arrow_2_circlepath"></f7-icon>
+                <span class="transaction-swipe-hint-text">{{ tt('Tip: Swipe right on any transaction to log it again in 1 tap') }}</span>
             </div>
             <button type="button"
                     class="transaction-swipe-hint-close"
                     :aria-label="tt('Close')"
                     @click="dismissSwipeHint">
-                <f7-icon f7="xmark" size="14"></f7-icon>
+                <f7-icon f7="xmark" size="13"></f7-icon>
             </button>
         </div>
 
@@ -319,12 +319,17 @@
                                     </div>
                                 </div>
                             </template>
+                            <f7-swipeout-actions :left="textDirection === TextDirection.LTR"
+                                                 :right="textDirection === TextDirection.RTL"
+                                                 v-if="transaction.type !== TransactionType.ModifyBalance">
+                                <f7-swipeout-button color="green" close class="transaction-swipe-log-again-btn"
+                                                    @click="logAgainToday(transaction)">
+                                    <f7-icon f7="arrow_2_circlepath" size="18"></f7-icon>
+                                    <span>{{ tt('Log Again') }}</span>
+                                </f7-swipeout-button>
+                            </f7-swipeout-actions>
                             <f7-swipeout-actions :left="textDirection === TextDirection.RTL"
                                                  :right="textDirection === TextDirection.LTR">
-                                <f7-swipeout-button color="green" close
-                                                    :text="tt('Log Again')"
-                                                    v-if="transaction.type !== TransactionType.ModifyBalance"
-                                                    @click="logAgainToday(transaction)"></f7-swipeout-button>
                                 <f7-swipeout-button color="primary" close
                                                     :text="tt('Duplicate')"
                                                     v-if="transaction.type !== TransactionType.ModifyBalance"
@@ -1973,13 +1978,12 @@ html[dir="rtl"] .list.transaction-info-list li.transaction-info .transaction-foo
     display: flex;
     align-items: center;
     justify-content: space-between;
-    gap: 8px;
+    gap: 10px;
     margin: 8px 16px 4px;
-    padding: 8px 12px;
-    border-radius: 14px;
-    background-color: var(--ebk-primary-soft);
-    color: var(--ebk-on-primary-soft);
-    border: 1px solid rgba(var(--ebk-primary-color), 0.16);
+    padding: 9px 13px;
+    border-radius: 16px;
+    background-color: rgba(var(--f7-theme-color-rgb), 0.09);
+    color: var(--f7-text-color);
     font-size: 13px;
     line-height: 1.35;
 }
@@ -1987,17 +1991,19 @@ html[dir="rtl"] .list.transaction-info-list li.transaction-info .transaction-foo
 .transaction-swipe-hint-content {
     display: flex;
     align-items: center;
-    gap: 8px;
+    gap: 9px;
     min-width: 0;
 }
 
 .transaction-swipe-hint-icon {
-    font-size: 18px;
+    font-size: 16px;
+    color: var(--f7-theme-color);
     flex-shrink: 0;
 }
 
 .transaction-swipe-hint-text {
     min-width: 0;
+    opacity: 0.85;
 }
 
 .transaction-swipe-hint-close {
@@ -2010,13 +2016,18 @@ html[dir="rtl"] .list.transaction-info-list li.transaction-info .transaction-foo
     padding: 0;
     border: 0;
     border-radius: 50%;
-    background: transparent;
+    background: rgba(128, 128, 128, 0.14);
     color: inherit;
-    opacity: 0.75;
+    opacity: 0.72;
     cursor: pointer;
 }
 
 .transaction-swipe-hint-close:active {
     opacity: 1;
+}
+
+.transaction-swipe-log-again-btn {
+    gap: 6px;
+    white-space: nowrap;
 }
 </style>

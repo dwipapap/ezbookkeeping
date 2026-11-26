@@ -37,63 +37,67 @@
             </f7-list-item>
 
             <template v-else>
-                <f7-list-item
-                    class="item-title-full-line savings-goal-mobile-item"
-                    :class="{ 'savings-goal-mobile-item--has-cover': !!coverUrls[item.goal.id] }"
-                    :style="getItemStyle(item.goal)"
-                    :key="item.goal.id"
-                    v-for="item in displayGoalItems"
-                >
-                    <template #title>
-                        <div class="savings-goal-mobile-item__overlay" v-if="coverUrls[item.goal.id]"></div>
+                <f7-list-item class="savings-goals-mobile-cards-item item-no-divider">
+                    <template #inner>
+                        <div class="savings-goals-mobile-cards">
+                            <div
+                                class="savings-goal-mobile-card"
+                                :class="{ 'savings-goal-mobile-card--has-cover': !!coverUrls[item.goal.id] }"
+                                :style="getItemStyle(item.goal)"
+                                :key="item.goal.id"
+                                v-for="item in displayGoalItems"
+                            >
+                                <div class="savings-goal-mobile-card__overlay" v-if="coverUrls[item.goal.id]"></div>
 
-                        <div class="savings-goal-mobile-item__content">
-                            <div class="display-flex justify-content-space-between align-items-center">
-                                <div class="display-flex align-items-center min-width-0">
-                                    <span class="savings-goal-mobile-item__dot" :style="getDotStyle(item.goal)"></span>
-                                    <span class="savings-goal-mobile-item__name">{{ item.goal.name }}</span>
+                                <div class="savings-goal-mobile-card__content">
+                                    <div class="savings-goal-mobile-card__header">
+                                        <div class="display-flex align-items-center min-width-0">
+                                            <span class="savings-goal-mobile-card__dot" :style="getDotStyle(item.goal)"></span>
+                                            <span class="savings-goal-mobile-card__name">{{ item.goal.name }}</span>
+                                        </div>
+                                        <span class="savings-goal-mobile-card__badge savings-goal-mobile-card__badge--completed" v-if="item.progress.isCompleted">
+                                            {{ tt('Completed') }}
+                                        </span>
+                                        <span class="savings-goal-mobile-card__percent" v-else>
+                                            {{ formatPercentToLocalizedNumerals(item.progress.rawPercent, 0, '<1') }}
+                                        </span>
+                                    </div>
+
+                                    <div class="savings-goal-mobile-card__amounts">
+                                        <span class="savings-goal-mobile-card__saved">
+                                            {{ formatGoalAmount(item.progress.savedAmount, item.currency, item.progress.incomplete) }}
+                                        </span>
+                                        <span class="savings-goal-mobile-card__target">
+                                            / {{ formatGoalAmount(item.progress.targetAmount, item.currency, false) }}
+                                        </span>
+                                    </div>
+
+                                    <div class="savings-goal-mobile-card__track">
+                                        <div
+                                            class="savings-goal-mobile-card__fill"
+                                            :style="getProgressFillStyle(item)"
+                                        ></div>
+                                    </div>
+
+                                    <div class="savings-goal-mobile-card__footer" v-if="hasFooterContent(item)">
+                                        <small class="savings-goal-mobile-card__meta">
+                                            <span v-if="item.estimateText">{{ item.estimateText }}</span>
+                                            <span v-else-if="item.goal.mode === 'accounts'">
+                                                {{ tt('Linked Accounts') }} ({{ item.goal.linkedAccountIds.length }})
+                                            </span>
+                                        </small>
+
+                                        <button
+                                            type="button"
+                                            class="savings-goal-mobile-card__quick-add"
+                                            :class="{ 'savings-goal-mobile-card__quick-add--glass': !!coverUrls[item.goal.id] }"
+                                            v-if="item.goal.mode === 'manual' && !editing"
+                                            @click="openQuickAddSheet(item.goal, item.currency)"
+                                        >
+                                            {{ tt('+ Add Savings') }}
+                                        </button>
+                                    </div>
                                 </div>
-                                <f7-badge color="green" v-if="item.progress.isCompleted">{{ tt('Completed') }}</f7-badge>
-                                <small class="savings-goal-mobile-item__percent" v-else>
-                                    {{ formatPercentToLocalizedNumerals(item.progress.rawPercent, 0, '<1') }}
-                                </small>
-                            </div>
-
-                            <div class="savings-goal-mobile-item__amounts">
-                                <span class="savings-goal-mobile-item__saved">
-                                    {{ formatGoalAmount(item.progress.savedAmount, item.currency, item.progress.incomplete) }}
-                                </span>
-                                <span class="savings-goal-mobile-item__target">
-                                    / {{ formatGoalAmount(item.progress.targetAmount, item.currency, false) }}
-                                </span>
-                            </div>
-
-                            <f7-progressbar
-                                class="margin-top-half"
-                                :progress="item.progress.percent"
-                                :color="item.progress.isCompleted ? 'green' : undefined"
-                                :style="getProgressBarStyle(item)"
-                            ></f7-progressbar>
-
-                            <div class="savings-goal-mobile-item__footer" v-if="hasFooterContent(item)">
-                                <small class="savings-goal-mobile-item__meta">
-                                    <span v-if="item.estimateText">{{ item.estimateText }}</span>
-                                    <span v-else-if="item.goal.mode === 'accounts'">
-                                        {{ tt('Linked Accounts') }} ({{ item.goal.linkedAccountIds.length }})
-                                    </span>
-                                </small>
-
-                                <f7-button
-                                    small
-                                    round
-                                    :fill="!!coverUrls[item.goal.id]"
-                                    :tonal="!coverUrls[item.goal.id]"
-                                    class="savings-goal-mobile-item__quick-add"
-                                    v-if="item.goal.mode === 'manual' && !editing"
-                                    @click="openQuickAddSheet(item.goal, item.currency)"
-                                >
-                                    {{ tt('+ Add Savings') }}
-                                </f7-button>
                             </div>
                         </div>
                     </template>
@@ -133,7 +137,7 @@ import { useExchangeRatesStore } from '@/stores/exchangeRates.ts';
 
 import type { BigDecimal } from '@/core/numeral.ts';
 import type { TextualYearMonthDay } from '@/core/datetime.ts';
-import { DISPLAY_HIDDEN_AMOUNT, INCOMPLETE_AMOUNT_SUFFIX } from '@/consts/numeral.ts';
+import { AMOUNT_FACTOR, DISPLAY_HIDDEN_AMOUNT, INCOMPLETE_AMOUNT_SUFFIX } from '@/consts/numeral.ts';
 import { TRANSACTION_MAX_AMOUNT } from '@/consts/transaction.ts';
 
 import {
@@ -220,24 +224,26 @@ function formatGoalAmount(amount: BigDecimal, currency: string, incomplete: bool
     return formatAmountToLocalizedNumeralsWithCurrency(amount, currency) + (incomplete ? INCOMPLETE_AMOUNT_SUFFIX : '');
 }
 
-function buildEstimateText(goal: SavingsGoalConfig, progress: SavingsGoalProgressResult, currency: string): string {
-    const parts: string[] = [];
+function formatRoundedMonthlyAmount(amount: BigDecimal, currency: string): string {
+    const roundedToMajor = amount.divide(AMOUNT_FACTOR).truncate().multiply(AMOUNT_FACTOR);
+    return formatGoalAmount(roundedToMajor.isPositive() ? roundedToMajor : amount.truncate(), currency, false);
+}
 
+function buildEstimateText(goal: SavingsGoalConfig, progress: SavingsGoalProgressResult, currency: string): string {
     if (!progress.isCompleted && progress.estimatedMonthsToGoal !== null) {
-        parts.push(tt('~{n} mo left', { n: formatNumberToLocalizedNumerals(progress.estimatedMonthsToGoal) }));
+        return tt('~{n} mo left', { n: formatNumberToLocalizedNumerals(progress.estimatedMonthsToGoal) });
     }
 
     if (goal.targetDate) {
-        const dateStr = formatGregorianTextualYearMonthDayToLongDate(goal.targetDate as TextualYearMonthDay);
         if (!progress.isCompleted && progress.requiredMonthlyToHitTargetDate) {
-            const monthlyStr = formatGoalAmount(progress.requiredMonthlyToHitTargetDate, currency, false);
-            parts.push(`${dateStr} · ${tt('{amount}/mo needed', { amount: monthlyStr })}`);
-        } else {
-            parts.push(dateStr);
+            const monthlyStr = formatRoundedMonthlyAmount(progress.requiredMonthlyToHitTargetDate, currency);
+            return tt('{amount}/mo needed', { amount: monthlyStr });
         }
+
+        return formatGregorianTextualYearMonthDayToLongDate(goal.targetDate as TextualYearMonthDay);
     }
 
-    return parts.join(' · ');
+    return '';
 }
 
 function hasFooterContent(item: DisplayGoalItem): boolean {
@@ -263,15 +269,18 @@ function getDotStyle(goal: SavingsGoalConfig): Record<string, string> {
     return { 'background-color': 'var(--f7-theme-color)' };
 }
 
-function getProgressBarStyle(item: DisplayGoalItem): Record<string, string> {
-    const style: Record<string, string> = {};
-    if (!item.progress.isCompleted && item.goal.color) {
-        style['--f7-progressbar-progress-color'] = `#${item.goal.color}`;
+function getProgressFillStyle(item: DisplayGoalItem): Record<string, string> {
+    let color = 'var(--f7-theme-color)';
+    if (item.progress.isCompleted) {
+        color = 'var(--f7-color-green, #34c759)';
+    } else if (item.goal.color) {
+        color = `#${item.goal.color}`;
     }
-    if (coverUrls.value[item.goal.id]) {
-        style['--f7-progressbar-bg-color'] = 'rgba(255, 255, 255, 0.25)';
-    }
-    return style;
+
+    return {
+        width: `${item.progress.percent}%`,
+        'background-color': color
+    };
 }
 
 function openManagePopup(startCreating: boolean): void {
@@ -330,35 +339,66 @@ watch(goals, (newGoals) => {
     margin-block-end: 0 !important;
 }
 
-.savings-goal-mobile-item {
+.savings-goals-mobile-cards-item :deep(.item-content) {
+    padding-inline-start: 12px;
+}
+
+.savings-goals-mobile-cards-item :deep(.item-inner) {
+    padding-inline-end: 12px;
+    padding-top: 6px;
+    padding-bottom: 12px;
+}
+
+.savings-goals-mobile-cards {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    width: 100%;
+}
+
+.savings-goal-mobile-card {
     position: relative;
     overflow: hidden;
+    border-radius: 18px;
+    padding: 14px 16px;
+    background-color: rgba(128, 128, 128, 0.08);
 }
 
-.savings-goal-mobile-item--has-cover {
+:root.dark .savings-goal-mobile-card:not(.savings-goal-mobile-card--has-cover) {
+    background-color: rgba(255, 255, 255, 0.06);
+}
+
+.savings-goal-mobile-card--has-cover {
     color: #ffffff;
+    box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.14);
 }
 
-.savings-goal-mobile-item__overlay {
+.savings-goal-mobile-card__overlay {
     position: absolute;
     inset: 0;
-    background: linear-gradient(180deg, rgba(12, 10, 24, 0.45) 0%, rgba(12, 10, 24, 0.80) 100%);
+    background: linear-gradient(180deg, rgba(12, 10, 24, 0.34) 0%, rgba(12, 10, 24, 0.82) 100%);
     pointer-events: none;
     z-index: 0;
 }
 
-.savings-goal-mobile-item__content {
+.savings-goal-mobile-card__content {
     position: relative;
     z-index: 1;
     width: 100%;
-    padding: 4px 0;
 }
 
-.savings-goal-mobile-item--has-cover .savings-goal-mobile-item__content {
-    text-shadow: 0 1px 3px rgba(0, 0, 0, 0.38);
+.savings-goal-mobile-card--has-cover .savings-goal-mobile-card__content {
+    text-shadow: 0 1px 2px rgba(0, 0, 0, 0.35);
 }
 
-.savings-goal-mobile-item__dot {
+.savings-goal-mobile-card__header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 8px;
+}
+
+.savings-goal-mobile-card__dot {
     width: 8px;
     height: 8px;
     border-radius: 50%;
@@ -366,42 +406,83 @@ watch(goals, (newGoals) => {
     flex-shrink: 0;
 }
 
-.savings-goal-mobile-item__name {
+.savings-goal-mobile-card__name {
+    font-size: 0.95rem;
     font-weight: 600;
+    letter-spacing: -0.01em;
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
 }
 
-.savings-goal-mobile-item__percent {
+.savings-goal-mobile-card__percent {
+    font-size: 0.82rem;
     font-weight: 700;
-    margin-inline-start: 8px;
+    font-variant-numeric: tabular-nums;
+    padding: 2px 8px;
+    border-radius: 999px;
+    background-color: rgba(128, 128, 128, 0.14);
     flex-shrink: 0;
 }
 
-.savings-goal-mobile-item__amounts {
-    margin-top: 4px;
-    font-size: 0.9rem;
+.savings-goal-mobile-card--has-cover .savings-goal-mobile-card__percent {
+    background-color: rgba(255, 255, 255, 0.22);
+    color: #ffffff;
 }
 
-.savings-goal-mobile-item__saved {
+.savings-goal-mobile-card__badge--completed {
+    font-size: 0.75rem;
+    font-weight: 600;
+    padding: 2px 8px;
+    border-radius: 999px;
+    background-color: var(--f7-color-green, #34c759);
+    color: #ffffff;
+    flex-shrink: 0;
+}
+
+.savings-goal-mobile-card__amounts {
+    margin-top: 6px;
+    font-size: 0.88rem;
+    font-variant-numeric: tabular-nums;
+}
+
+.savings-goal-mobile-card__saved {
     font-weight: 600;
 }
 
-.savings-goal-mobile-item__target {
-    opacity: 0.72;
-    font-size: 0.82rem;
+.savings-goal-mobile-card__target {
+    opacity: 0.7;
+    font-size: 0.8rem;
 }
 
-.savings-goal-mobile-item__footer {
+.savings-goal-mobile-card__track {
+    width: 100%;
+    height: 7px;
+    margin-top: 10px;
+    border-radius: 999px;
+    background-color: rgba(128, 128, 128, 0.18);
+    overflow: hidden;
+}
+
+.savings-goal-mobile-card--has-cover .savings-goal-mobile-card__track {
+    background-color: rgba(255, 255, 255, 0.26);
+}
+
+.savings-goal-mobile-card__fill {
+    height: 100%;
+    border-radius: 999px;
+}
+
+.savings-goal-mobile-card__footer {
     display: flex;
     align-items: center;
     justify-content: space-between;
-    gap: 8px;
-    margin-top: 8px;
+    gap: 10px;
+    margin-top: 10px;
 }
 
-.savings-goal-mobile-item__meta {
+.savings-goal-mobile-card__meta {
+    font-size: 0.78rem;
     opacity: 0.78;
     overflow: hidden;
     text-overflow: ellipsis;
@@ -409,8 +490,36 @@ watch(goals, (newGoals) => {
     min-width: 0;
 }
 
-.savings-goal-mobile-item__quick-add {
-    flex-shrink: 0;
+.savings-goal-mobile-card__quick-add {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    flex: 0 0 auto;
+    width: auto !important;
+    height: 28px;
+    padding: 0 12px;
+    border: 0;
+    border-radius: 999px;
+    background-color: rgba(var(--f7-theme-color-rgb), 0.14);
+    color: var(--f7-theme-color);
+    font: inherit;
+    font-size: 0.78rem;
+    font-weight: 600;
+    white-space: nowrap;
+    cursor: pointer;
+    touch-action: manipulation;
+    transition: opacity 0.12s ease, transform 0.1s ease;
+}
+
+.savings-goal-mobile-card__quick-add:active {
+    transform: scale(0.96);
+    opacity: 0.82;
+}
+
+.savings-goal-mobile-card__quick-add--glass {
+    background-color: rgba(255, 255, 255, 0.22);
+    color: #ffffff;
+    box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.30);
 }
 
 .min-width-0 {

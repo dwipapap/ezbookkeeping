@@ -43,12 +43,12 @@
         </f7-list-item>
 
         <template v-else>
-            <f7-list-item link="#" class="category-budget-mobile-item item-no-divider"
+            <f7-list-item link="#" class="category-budget-mobile-item"
                           :key="item.categoryId"
                           v-for="item in displayItems"
                           @click="onBudgetItemClick(item.categoryId)">
                 <template #media>
-                    <div class="display-flex align-items-center statistics-icon">
+                    <div class="category-budget-mobile-icon" :style="getCategoryIconBgStyle(item)">
                         <ItemIcon :icon-type="getCategoryIconType(item.iconType)"
                                   :icon-id="item.icon"
                                   :color="item.color"
@@ -60,15 +60,9 @@
                 <template #inner>
                     <div class="category-budget-mobile-content width-100">
                         <div class="category-budget-mobile-header">
-                            <div class="category-budget-mobile-title">
-                                <span class="text-truncate">{{ item.categoryName }}</span>
-                                <span class="category-budget-mobile-dot"
-                                      :class="getStatusDotClass(item)"
-                                      v-if="item.status !== 'normal' || item.isAheadOfPace"></span>
-                            </div>
-                            <span class="category-budget-mobile-amounts"
-                                  :class="{ 'text-color-red': item.status === 'exceeded', 'text-color-orange': item.status === 'warning' }">
-                                {{ getDisplayAmount(item.spentAmount, item.incomplete) }} / {{ getDisplayAmount(item.limitAmount, false) }}
+                            <span class="category-budget-mobile-title text-truncate">{{ item.categoryName }}</span>
+                            <span class="category-budget-mobile-percent-pill" :class="getPercentPillClass(item)">
+                                {{ formatPercentToLocalizedNumerals(item.usedPercent, 0, '<1') }}
                             </span>
                         </div>
 
@@ -80,21 +74,20 @@
                                 <div class="category-budget-mobile-progress__pace-marker"
                                      :style="{ left: `${item.pacePercent}%` }"></div>
                             </div>
-                            <small class="category-budget-mobile-percent">
-                                {{ formatPercentToLocalizedNumerals(item.usedPercent, 0, '<1') }}
-                            </small>
                         </div>
 
-                        <div class="category-budget-mobile-caption" v-if="showDailySafeToSpend">
-                            <span class="text-color-red" v-if="item.remainingAmount.isNegative()">
-                                {{ `${tt('Over budget by')} ${getDisplayAmount(item.remainingAmount.abs(), item.incomplete)}` }}
+                        <div class="category-budget-mobile-meta">
+                            <span class="category-budget-mobile-amounts"
+                                  :class="{ 'text-color-red': item.status === 'exceeded', 'text-color-orange': item.status === 'warning' }">
+                                {{ getDisplayAmount(item.spentAmount, item.incomplete) }}
+                                <span class="category-budget-mobile-limit">/ {{ getDisplayAmount(item.limitAmount, false) }}</span>
                             </span>
-                            <template v-else>
-                                <span class="text-color-gray">
-                                    {{ `${tt('Safe')}: ${getDisplayAmount(item.dailySafeToSpend, item.incomplete)}/${tt('day')}` }}
+                            <template v-if="showDailySafeToSpend">
+                                <span class="category-budget-mobile-safe text-color-red" v-if="item.remainingAmount.isNegative()">
+                                    +{{ getDisplayAmount(item.remainingAmount.abs(), item.incomplete) }}
                                 </span>
-                                <span class="text-color-gray">
-                                    {{ `${getDisplayAmount(item.remainingAmount, item.incomplete)} ${tt('left')}` }}
+                                <span class="category-budget-mobile-safe text-color-gray" v-else>
+                                    {{ `${tt('Safe')}: ${getDisplayAmount(item.dailySafeToSpend, item.incomplete)}/${tt('day')}` }}
                                 </span>
                             </template>
                         </div>
@@ -205,16 +198,24 @@ function getTransactionItemLinkUrl(categoryId: string): string {
     return `/transaction/list?${overviewStore.getTransactionListPageParams({ type: TransactionType.Expense, dateType: DateRange.ThisMonth.type, categoryIds: [categoryId] })}`;
 }
 
-function getStatusDotClass(item: CategoryBudgetProgressItem): string {
+function getCategoryIconBgStyle(item: CategoryBudgetProgressItem): Record<string, string> {
+    if (item.color && /^[0-9a-f]{6}$/i.test(item.color)) {
+        return { 'background-color': `#${item.color}1f` };
+    }
+
+    return {};
+}
+
+function getPercentPillClass(item: CategoryBudgetProgressItem): string {
     if (item.status === 'exceeded') {
-        return 'category-budget-mobile-dot--error';
+        return 'category-budget-mobile-percent-pill--exceeded';
     }
 
     if (item.status === 'warning' || item.isAheadOfPace) {
-        return 'category-budget-mobile-dot--warning';
+        return 'category-budget-mobile-percent-pill--warning';
     }
 
-    return '';
+    return 'category-budget-mobile-percent-pill--normal';
 }
 
 function openManagePopup(): void {
@@ -235,65 +236,74 @@ function onBudgetItemClick(categoryId: string): void {
 </script>
 
 <style scoped>
+.category-budget-mobile-icon {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 36px;
+    height: 36px;
+    border-radius: 10px;
+    background-color: rgba(128, 128, 128, 0.1);
+}
+
 .category-budget-mobile-content {
     display: flex;
     flex-direction: column;
-    gap: 4px;
-    padding: 4px 0;
+    gap: 6px;
+    padding: 6px 0;
     min-width: 0;
 }
 
 .category-budget-mobile-header {
     display: flex;
-    flex-wrap: wrap;
     justify-content: space-between;
-    align-items: baseline;
-    gap: 2px 8px;
+    align-items: center;
+    gap: 8px;
 }
 
 .category-budget-mobile-title {
-    display: inline-flex;
-    align-items: center;
-    gap: 6px;
-    flex: 1 1 auto;
-    min-width: 120px;
-    font-weight: 500;
+    font-size: 0.94rem;
+    font-weight: 600;
+    letter-spacing: -0.01em;
+    min-width: 0;
 }
 
-.category-budget-mobile-dot {
-    display: inline-block;
+.category-budget-mobile-percent-pill {
     flex: 0 0 auto;
-    width: 7px;
-    height: 7px;
-    border-radius: 50%;
-}
-
-.category-budget-mobile-dot--warning {
-    background-color: var(--f7-color-orange, #ff9500);
-}
-
-.category-budget-mobile-dot--error {
-    background-color: var(--f7-color-red, #ff3b30);
-}
-
-.category-budget-mobile-amounts {
-    flex: 0 0 auto;
-    font-size: 0.85em;
+    padding: 2px 8px;
+    border-radius: 999px;
+    font-size: 0.74rem;
+    font-weight: 700;
     font-variant-numeric: tabular-nums;
+    line-height: 1.35;
+}
+
+.category-budget-mobile-percent-pill--normal {
+    color: var(--f7-color-green, #34c759);
+    background-color: rgba(52, 199, 89, 0.14);
+}
+
+.category-budget-mobile-percent-pill--warning {
+    color: var(--f7-color-orange, #ff9500);
+    background-color: rgba(255, 149, 0, 0.16);
+}
+
+.category-budget-mobile-percent-pill--exceeded {
+    color: var(--f7-color-red, #ff3b30);
+    background-color: rgba(255, 59, 48, 0.16);
 }
 
 .category-budget-mobile-progress {
     display: flex;
     align-items: center;
-    gap: 8px;
 }
 
 .category-budget-mobile-progress__track {
     position: relative;
     flex: 1 1 auto;
-    height: 8px;
+    height: 7px;
     border-radius: 999px;
-    background-color: rgba(128, 128, 128, 0.2);
+    background-color: rgba(128, 128, 128, 0.18);
     overflow: visible;
 }
 
@@ -318,26 +328,34 @@ function onBudgetItemClick(categoryId: string): void {
     position: absolute;
     top: -2px;
     bottom: -2px;
-    width: 2px;
-    border-radius: 1px;
+    width: 2.5px;
+    border-radius: 999px;
     transform: translateX(-50%);
     background-color: var(--f7-text-color, #000000);
-    opacity: 0.75;
+    opacity: 0.65;
     z-index: 1;
 }
 
-.category-budget-mobile-percent {
-    flex: 0 0 auto;
-    font-size: 0.75em;
-    opacity: 0.75;
+.category-budget-mobile-meta {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: space-between;
+    align-items: baseline;
+    gap: 2px 10px;
+    font-size: 0.78rem;
     font-variant-numeric: tabular-nums;
 }
 
-.category-budget-mobile-caption {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    gap: 8px;
-    font-size: 0.78em;
+.category-budget-mobile-amounts {
+    font-weight: 500;
+}
+
+.category-budget-mobile-limit {
+    opacity: 0.65;
+    font-weight: 400;
+}
+
+.category-budget-mobile-safe {
+    white-space: nowrap;
 }
 </style>
