@@ -245,16 +245,18 @@ function onBudgetItemClick(categoryId: string): void {
 
 .category-budget-mobile-header {
     display: flex;
+    flex-wrap: wrap;
     justify-content: space-between;
     align-items: baseline;
-    gap: 8px;
+    gap: 2px 8px;
 }
 
 .category-budget-mobile-title {
     display: inline-flex;
     align-items: center;
     gap: 6px;
-    min-width: 0;
+    flex: 1 1 auto;
+    min-width: 120px;
     font-weight: 500;
 }
 

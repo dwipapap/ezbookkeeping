@@ -661,6 +661,8 @@ watch(() => props.flipNegative, (newValue) => {
     align-items: center;
     justify-content: center;
     flex: 0 0 auto;
+    width: auto !important;
+    min-width: 52px;
     height: 30px;
     padding: 0 12px;
     border: 1px solid rgba(var(--f7-theme-color-rgb), 0.25);
